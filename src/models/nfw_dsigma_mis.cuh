@@ -1,4 +1,5 @@
 // Off-Centered Sigma NFW Profile
+// ----------- edited by Arwa but not sure about it ---------------------
 // Uses an interpolation table (look at data/nfw_off_center/)
 // Assumes that datablock has rho_c, concetration
 #ifndef Y3_CLUSTER_NFW_DSIGMA_MIS
@@ -19,13 +20,9 @@
 
 namespace y3_cuda {
   // Default concentration value
-  double const CONC = 4.0;
-
-  // Critical density in Msun/Mpc^3
-  double const RHOC = 2.77533742639e+11;
-
-  // selects the miscentering kernel ('single','gamma')
-  std::string const GAMMA = "gamma";
+  double const DSIGMA_MIS_CONC = 4.0;
+  double const DSIGMA_MIS_RHOC = 2.77533742639e+11;
+  std::string const DSIGMA_MIS_GAMMA = "gamma";
 
   // Helper functions to construct filenames needed to read the interpolation
   // table information.
@@ -61,12 +58,13 @@ namespace y3_cuda {
                     read_vector(log_dsigma_file(kernel)))
     { }
 
+
     NFW_DSIGMA_MIS()
-    : _c(CONC),
-      _rhoc(RHOC),
-      _nfwProfile(read_vector(logx_file(GAMMA)),
-                  read_vector(logxmis_file(GAMMA)),
-                  read_vector(log_dsigma_file(GAMMA)))
+    : _c(DSIGMA_MIS_CONC),
+      _rhoc(DSIGMA_MIS_RHOC),
+      _nfwProfile(read_vector(logx_file(DSIGMA_MIS_GAMMA)),
+                  read_vector(logxmis_file(DSIGMA_MIS_GAMMA)),
+                  read_vector(log_dsigma_file(DSIGMA_MIS_GAMMA)))
 
     { }
 
@@ -74,13 +72,22 @@ namespace y3_cuda {
     // TODO: Implement Mass-Concentration Relation
     // TODO: Implement different operator in case of rhocz(zt)
     // Ask Marc How to make _c and _rhoc be functional forms in any case
-    // NFW_DSIGMA_MIS(cosmosis::DataBlock& sample)
-    // : _c(y3_cluster::make_Interp1D(sample,"haloModel","lnM","concentration").clamp(14.0))
-    // , _rhoc(y3_cluster::make_Interp1D(sample,"haloModel","z","rhoc").clamp(0.0))
-    // , _nfwProfile(read_vector(logx_file(GAMMA)),
-    //               read_vector(logxmis_file(GAMMA)),
-    //               read_vector(log_dsigma_file(GAMMA)))
-    // { }
+    
+    NFW_DSIGMA_MIS(cosmosis::DataBlock& sample)
+        : _c(y3_cluster::make_Interp1D(sample,
+                                        "haloModel",
+                                        "lnM",
+                                        "concentration")
+                .clamp(14.0)),
+            _rhoc(y3_cluster::make_Interp1D(sample,
+                                            "haloModel",
+                                            "z",
+                                            "rhoc")
+                    .clamp(0.0)),
+            _nfwProfile(read_vector(logx_file(DSIGMA_MIS_GAMMA)),
+                        read_vector(logxmis_file(DSIGMA_MIS_GAMMA)),
+                        read_vector(log_dsigma_file(DSIGMA_MIS_GAMMA)))
+        { }
 
     __device__ __host__ double
     operator()(double r, double rmis, double lnM) const 

@@ -1,4 +1,5 @@
 // Off-Centered Sigma NFW Profile
+// ----------- edited by Arwa but not sure about it ---------------------
 // Uses an interpolation table (look at data/nfw_off_center/)
 // Assumes that datablock has rho_c, concetration
 #ifndef Y3_CLUSTER_NFW_SIGMA_MIS
@@ -19,13 +20,9 @@
 
 namespace y3_cuda {
   // Default concentration value
-  double const CONC = 4.0;
-
-  // Critical density in Msun/Mpc^3
-  double const RHOC = 2.77533742639e+11;
-
-  // selects the miscentering kernel ('single','gamma')
-  std::string const GAMMA = "gamma";
+  inline double const CONC = 4.0;
+  inline double const RHOC = 2.77533742639e+11;
+  inline std::string const GAMMA = "gamma";
 
   class NFW_SIGMA_MIS {
 
