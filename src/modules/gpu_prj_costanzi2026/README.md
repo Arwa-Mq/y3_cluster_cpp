@@ -11,7 +11,7 @@ The sections below summarize the purpose of each file.
 
 ---
 
-# `src/models`
+## src/models
 
 ### `emg_des_t.cuh`
 
@@ -76,7 +76,7 @@ This file contains helper functions for computing:
 
 -----
 
-# `src/modules/gpu_prj_costanzi2026`
+## src/modules/gpu_prj_costanzi2026
 
 ### `numberCountsFull_t.cu`
 
@@ -115,7 +115,7 @@ Runs the multidimensional GPU integration of the projection term and stores the 
 
 ---
 
-# `cosmosis_tests/gpu_prj_costanzi2026`
+## cosmosis_tests/gpu_prj_costanzi2026
 
 ### `shearTot_pipeline.ini`
 
