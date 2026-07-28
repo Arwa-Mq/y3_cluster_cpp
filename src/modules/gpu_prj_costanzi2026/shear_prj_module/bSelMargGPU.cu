@@ -18,8 +18,18 @@
 
 #include "models/p_operator_gpu_t.cuh"
 #include "models/mor_shifted_poisson_t.cuh"
+// BROKEN: do not use models/emg_des_t.cuh's EMG_DES_t from host code.
+// Its members are quad::Interp1D, which store *device* pointers allocated
+// via cuda_malloc()/cudaMemcpy (see common/cuda/Interp1D.cuh). EMG_DES_t is
+// safe to call from inside a CUDA kernel (that's how numberCountsFull_t.cu
+// and Shear1hMisSel.cu use it), but compute_B_marginalised() below runs on
+// the host -- constructing EMG_DES_t there and calling .cdf() dereferences
+// a device pointer on the CPU, which segfaults. See emg_cdf_host() further
+// down for a plain-host reimplementation used instead.
+// #include "models/emg_des_t.cuh"
 #include "models/b_sel.cuh"  // all fucntions for computing b_sel asymptotes
 
+#include <algorithm>
 #include <iostream>
 #include <optional>
 #include <vector>
@@ -82,6 +92,20 @@ namespace {
   {
     double const centres[4] = {25.0, 37.5, 52.5, 130.0};
     return (bin >= 0 && bin < 4) ? centres[bin] : 25.0;
+  }
+
+  // DES Y3 richness bin edges, matching lob_center() above and the
+  // lob_bin_low/lob_bin_high arrays used by numberCountsFull_t/Shear1hMisSel
+  // (see shearTot_pipeline.ini): [20,30], [30,45], [45,60], [60,200].
+  // Needed by compute_B_marginalised() to evaluate P(lob|ltr,z) over the
+  // actual bin, not just at its centre.
+  inline void lob_bin_edges(int bin, double& lo, double& hi)
+  {
+    double const edges_lo[4] = {20.0, 30.0, 45.0,  60.0};
+    double const edges_hi[4] = {30.0, 45.0, 60.0, 200.0};
+    int const b = (bin >= 0 && bin < 4) ? bin : 0;
+    lo = edges_lo[b];
+    hi = edges_hi[b];
   }
 
   // Compute b_eff via mass-weighted integral:
@@ -164,20 +188,132 @@ namespace {
     }
   }
 
+  // Host-side copy of the "plob_ltr_params" datablock section (written by
+  // y3_buzzard/prj_params.py): the 8 EMG coefficients on a shared z grid.
+  // Plain std::vector<double>, unlike EMG_DES_t's quad::Interp1D members,
+  // so it's safe to read from host code -- see the comment on the removed
+  // `#include "models/emg_des_t.cuh"` above for why that matters.
+  struct PlobLtrParams {
+    std::vector<double> z, a_mu, b_mu, a_sig, b_sig, a_tau, b_tau, a_fprj, b_fprj;
+  };
+
+  PlobLtrParams
+  read_plob_ltr_params(DataBlock& sample)
+  {
+    PlobLtrParams p;
+    p.z      = get_vector_double(sample, "plob_ltr_params", "z");
+    p.a_mu   = get_vector_double(sample, "plob_ltr_params", "a_mu");
+    p.b_mu   = get_vector_double(sample, "plob_ltr_params", "b_mu");
+    p.a_sig  = get_vector_double(sample, "plob_ltr_params", "a_sig");
+    p.b_sig  = get_vector_double(sample, "plob_ltr_params", "b_sig");
+    p.a_tau  = get_vector_double(sample, "plob_ltr_params", "a_tau");
+    p.b_tau  = get_vector_double(sample, "plob_ltr_params", "b_tau");
+    p.a_fprj = get_vector_double(sample, "plob_ltr_params", "a_fprj");
+    p.b_fprj = get_vector_double(sample, "plob_ltr_params", "b_fprj");
+    return p;
+  }
+
+  // Plain linear interpolation on a host std::vector (x assumed sorted
+  // ascending), clamped at the ends -- same behaviour as quad::Interp1D's
+  // clamp()+eval(), just without touching device memory.
+  double
+  lerp_host(std::vector<double> const& x, std::vector<double> const& y, double xq)
+  {
+    int const n = static_cast<int>(x.size());
+    if (xq <= x[0]) return y[0];
+    if (xq >= x[n - 1]) return y[n - 1];
+    int i = 0;
+    for (int k = 1; k < n; ++k) {
+      if (x[k] > xq) { i = k - 1; break; }
+      i = k - 1;
+    }
+    double const f = (xq - x[i]) / (x[i + 1] - x[i] + 1e-30);
+    return y[i] + f * (y[i + 1] - y[i]);
+  }
+
+  // Host reimplementation of EMG_DES_t::cdf() (src/models/emg_des_t.cuh),
+  // using lerp_host() in place of quad::Interp1D::clamp(). Uses the direct
+  // exp(A)*Phi(...) tail form rather than emg_des_t.cuh's erfcx-stabilised
+  // version: that stabilisation guards against exp(A) overflow when ltr can
+  // range far above lob (as in numberCountsFull_t's K_i), but here ltr is
+  // always <= lob by construction (see compute_B_marginalised's ltr loop),
+  // which keeps A bounded and the direct form numerically safe.
+  double
+  emg_cdf_host(PlobLtrParams const& p, double lob, double ltr, double z)
+  {
+    double const ltr_safe = std::max(ltr, 0.5);
+
+    double const a_mu_z   = lerp_host(p.z, p.a_mu,   z);
+    double const b_mu_z   = lerp_host(p.z, p.b_mu,   z);
+    double const a_sig_z  = lerp_host(p.z, p.a_sig,  z);
+    double const b_sig_z  = lerp_host(p.z, p.b_sig,  z);
+    double const a_tau_z  = lerp_host(p.z, p.a_tau,  z);
+    double const b_tau_z  = lerp_host(p.z, p.b_tau,  z);
+    double const a_fprj_z = lerp_host(p.z, p.a_fprj, z);
+    double const b_fprj_z = lerp_host(p.z, p.b_fprj, z);
+
+    double const mu = a_mu_z + b_mu_z * ltr_safe;
+    double sigma = b_sig_z * std::pow(ltr_safe, a_sig_z);
+    double tau   = b_tau_z / std::pow(ltr_safe, a_tau_z);
+    double const denom = std::pow(1.0 + std::exp(-ltr_safe), a_fprj_z);
+    double fprj = b_fprj_z / std::max(denom, 1e-300);
+    sigma = std::max(sigma, 1e-8);
+    tau   = std::max(tau,   1e-8);
+    fprj  = std::max(0.0, std::min(1.0, fprj));
+
+    double const z_std = (lob - mu) / sigma;
+    double const gaussian_cdf = 0.5 * (1.0 + std::erf(z_std / std::sqrt(2.0)));
+
+    double A = -tau * (lob - mu) + 0.5 * tau * tau * sigma * sigma;
+    A = std::max(-700.0, std::min(700.0, A));
+    double const tail =
+        std::exp(A) * 0.5 * (1.0 + std::erf((z_std - tau * sigma) / std::sqrt(2.0)));
+
+    double const result = gaussian_cdf - fprj * tail;
+    return std::max(0.0, std::min(1.0, result));
+  }
+
   // Compute B_small, B_large via marginalization over ltr
   // B_small = <b_zero>_{P(ltr|lob,zob)}
   // B_large = <b_infty>_{P(ltr|lob,zob)}
   //
   // Uses b_sel_asymptotes() from b_sel.cuh for each ltr value,
-  // weighted by MOR probability.
+  // weighted by P(ltr|lob,zob).
+  //
+  // FIX (see notebook diagnosis, arXiv:2604.05833 comparison, 2026-07-07):
+  // the previous implementation (kept below, commented out) weighted each
+  // ltr sample by MOR(ltr | M=1e14, z) -- a single hardcoded representative
+  // mass, independent of lob and never actually conditioned on lob at all
+  // (beyond capping the ltr range at ltr<=lob). Since that MOR(ltr|M=1e14)
+  // profile peaks near ltr~14 for every richness bin, higher-lob bins ended
+  // up averaging almost entirely over delta_prj = (lob-ltr)/Delta_RND - 1
+  // values far above 5 -- well outside the range the Costanzi-2026 linear
+  // b_infty(delta_prj) = b_eff*(1+0.13*delta_prj) relation was calibrated
+  // and tested on (arXiv:2604.05833 Figs. 6-7 only go up to delta_prj~5).
+  // That is why B_large/b_eff came out at 1.7-3.2 instead of the paper's
+  // ~0.8-2.0 -- for the lob=130 bin, *100%* of the marginalisation weight
+  // fell at delta_prj>5.
+  //
+  // The fix builds the actual P(ltr|lob,zob) posterior instead:
+  //   P(ltr|z)     = int dM n(M,z) MOR(ltr|M,z)             (mass-marginalised prior)
+  //   P(lob|ltr,z) = EMG_CDF(lob_bin_high) - EMG_CDF(lob_bin_low)   (richness-projection kernel)
+  //   P(ltr|lob,z) ~ P(ltr|z) * P(lob|ltr,z)
+  // using the same M_grid/n_M tables already built for compute_b_eff(), and
+  // the EMG_DES_t model (src/models/emg_des_t.cuh) that numberCountsFull_t
+  // and Shear1hMisSel already use for the same P(lob|ltr,z) kernel.
   void compute_B_marginalised(
       double lob,
+      double lob_bin_low,
+      double lob_bin_high,
       double zob,
       double P1,
       double I1,
       double J,
       double b_eff,
       y3_cuda::MOR_SHIFTED_POISSON_t const& mor,
+      PlobLtrParams const& plob,
+      std::vector<double> const& M_grid,  // NM points, geometric 1e13..1e16
+      std::vector<double> const& n_M,     // dn/dlnM at zob on M_grid
       double& B_small,
       double& B_large)
   {
@@ -188,13 +324,16 @@ namespace {
     double const ltr_max = lob;
     double const dltr = (ltr_max - ltr_min) / (N_ltr - 1);
 
+    int const NM = M_grid.size();
+
     double sum_b_zero = 0.0;
     double sum_b_infty = 0.0;
     double sum_weight = 0.0;
 
-    // Use a representative lnM for MOR evaluation
-    // (MOR is evaluated at the mean mass for the richness bin)
-    double const lnM_eff = std::log(1e14);  // Representative mass
+    // ------------------------------------------------------------------
+    // OLD (WRONG): single hardcoded representative mass, lob-independent.
+    // double const lnM_eff = std::log(1e14);  // Representative mass
+    // ------------------------------------------------------------------
 
     for (int i = 0; i < N_ltr; ++i) {
       double const ltr = ltr_min + i * dltr;
@@ -203,9 +342,34 @@ namespace {
       double b_zero, b_infty;
       y3_cuda::b_sel_asymptotes(lob, ltr, P1, I1, J, b_eff, b_zero, b_infty);
 
-      // Weight by MOR probability P(ltr | M, z)
-      // MOR(ltr, lnM, z) gives P(ltr | M, z)
-      double const weight = mor(ltr, lnM_eff, zob);
+      // ----------------------------------------------------------------
+      // OLD (WRONG): weight by MOR at one fixed mass -- not conditioned
+      // on lob at all, so the ltr average never tracked lob.
+      //
+      // double const weight = mor(ltr, lnM_eff, zob);
+      // ----------------------------------------------------------------
+
+      // P(ltr|z): marginalise MOR(ltr|M,z) over the halo mass function,
+      // trapezoidal in ln(M) (same pattern as compute_b_eff() above).
+      double p_ltr_given_z = 0.0;
+      for (int im = 0; im < NM - 1; ++im) {
+        double const lnM_lo = std::log(M_grid[im]);
+        double const lnM_hi = std::log(M_grid[im + 1]);
+        double const dlnM = lnM_hi - lnM_lo;
+        double const mor_lo = mor(ltr, lnM_lo, zob);
+        double const mor_hi = mor(ltr, lnM_hi, zob);
+        p_ltr_given_z += 0.5 * (n_M[im] * mor_lo + n_M[im + 1] * mor_hi) * dlnM;
+      }
+
+      // P(lob|ltr,z): probability that a halo with true richness ltr is
+      // observed within this lob bin, from the same EMG kernel used as
+      // K_i in numberCountsFull_t.cu / Shear1hMisSel.cu (host-side
+      // reimplementation -- see emg_cdf_host() above for why).
+      double const p_lob_given_ltr =
+          emg_cdf_host(plob, lob_bin_high, ltr, zob) -
+          emg_cdf_host(plob, lob_bin_low, ltr, zob);
+
+      double const weight = p_ltr_given_z * std::max(0.0, p_lob_given_ltr);
 
       sum_b_zero += b_zero * weight;
       sum_b_infty += b_infty * weight;
@@ -268,6 +432,14 @@ public:
     // -----------------------------------------------------------------
     y3_cuda::MOR_SHIFTED_POISSON_t mor(sample);
 
+    // P(lob|ltr,z) kernel for compute_B_marginalised(); reads
+    // "plob_ltr_params", written by y3_buzzard/prj_params.py earlier in
+    // the pipeline (see shearTot_pipeline.ini module order).
+    // BROKEN -- segfaults, see the comment on the removed emg_des_t.cuh
+    // include above (Interp1D holds device pointers, not host-safe):
+    // y3_cuda::EMG_DES_t emg(sample);
+    PlobLtrParams plob = read_plob_ltr_params(sample);
+
     // Read HMF and bias tables
     auto mf_m = get_vector_double(sample, "mass_function", "m_h");
     auto mf_z = get_vector_double(sample, "mass_function", "z");
@@ -323,9 +495,16 @@ public:
 
       // Compute B_small, B_large via marginalization over ltr
       // Uses b_sel_asymptotes() from b_sel.cuh
+      double lob_bin_lo, lob_bin_hi;
+      lob_bin_edges(lob_bin, lob_bin_lo, lob_bin_hi);
       double B_small, B_large;
-      compute_B_marginalised(lob, zob, P1_vals[ig], I1_vals[ig], J_vals[ig],
-                             b_eff_vals[ig], mor, B_small, B_large);
+      // OLD (WRONG) call, kept for reference:
+      // compute_B_marginalised(lob, zob, P1_vals[ig], I1_vals[ig], J_vals[ig],
+      //                        b_eff_vals[ig], mor, B_small, B_large);
+      compute_B_marginalised(lob, lob_bin_lo, lob_bin_hi, zob,
+                             P1_vals[ig], I1_vals[ig], J_vals[ig],
+                             b_eff_vals[ig], mor, plob, M_grid, n_M_at_z,
+                             B_small, B_large);
       B_small_vals[ig] = B_small;
       B_large_vals[ig] = B_large;
       lob_vals[ig] = lob;
