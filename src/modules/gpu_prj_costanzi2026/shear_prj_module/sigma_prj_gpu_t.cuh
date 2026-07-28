@@ -147,6 +147,23 @@ struct DSigmaClWeight {
   }
 };
 
+// total = rnd + cl in one pass, i.e. the literal [1 + b*b_sel*xi_NL]
+// bracket of the Costanzi-2026 Sigma_prj integrand (validation_report.tex
+// Eq. sigma_prj) applied to DSigma_mis. Use this instead of DSigmaRndWeight
+// when shear_prj/vals should be the full projection term (rnd+cl), not just
+// the uncorrelated background piece.
+struct DSigmaTotalWeight {
+  __host__ __device__ static double apply(double common,
+                                          double /*Sigma_v*/,
+                                          double DSigma_v,
+                                          double bias, double bsel,
+                                          double xi, bool has_cl)
+  {
+    double const cl = has_cl ? bias * bsel * xi : 0.0;
+    return common * (1.0 + cl) * DSigma_v;
+  }
+};
+
 // -----------------------------------------------------------------------------
 // SigmaPrjGPU<WeightF>
 //
@@ -213,8 +230,8 @@ public:
     // projection uses rho_mean = Omega_m * rho_crit.
     sigma_mis_.emplace(4.0, 2.77533742639e+11, std::string("single"));
     dsigma_mis_.emplace(4.0, 2.77533742639e+11, std::string("single"));
-    //sigma_mis_->set_rho_mult(omega_m_);
-    //dsigma_mis_->set_rho_mult(omega_m_);
+    sigma_mis_->set_rho_mult(omega_m_);
+    dsigma_mis_->set_rho_mult(omega_m_);
 
     for (int i = 0; i < sigma_prj_gpu_detail::MAX_BSEL; ++i) {
       b_lob_[i] = 0.0;

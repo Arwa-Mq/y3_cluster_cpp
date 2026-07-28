@@ -53,6 +53,7 @@ namespace y3_cuda {
     NFW_DSIGMA_MIS(double c, double rhoc, std::string const& kernel)
       : _c(c),
         _rhoc(rhoc),
+        _rho_mult(1.0),
         _nfwProfile(read_vector(logx_file(kernel)),
                     read_vector(logxmis_file(kernel)),
                     read_vector(log_dsigma_file(kernel)))
@@ -62,6 +63,7 @@ namespace y3_cuda {
     NFW_DSIGMA_MIS()
     : _c(DSIGMA_MIS_CONC),
       _rhoc(DSIGMA_MIS_RHOC),
+      _rho_mult(1.0),
       _nfwProfile(read_vector(logx_file(DSIGMA_MIS_GAMMA)),
                   read_vector(logxmis_file(DSIGMA_MIS_GAMMA)),
                   read_vector(log_dsigma_file(DSIGMA_MIS_GAMMA)))
@@ -84,13 +86,23 @@ namespace y3_cuda {
                                             "z",
                                             "rhoc")
                     .clamp(0.0)),
+            _rho_mult(1.0),
             _nfwProfile(read_vector(logx_file(DSIGMA_MIS_GAMMA)),
                         read_vector(logxmis_file(DSIGMA_MIS_GAMMA)),
                         read_vector(log_dsigma_file(DSIGMA_MIS_GAMMA)))
         { }
 
+    // Multiplier applied to rho_s (= rho_crit * delta_c).  Set to
+    // Omega_m after reading cosmological_parameters to switch from
+    // the rho_crit-based normalisation to rho_mean-based, matching
+    // the CPU y3_cluster::NFW_DSIGMA_MIS (nfw_dsigma_mis.hh) and the
+    // Python reference (richness_selection.nfw.NFWMiscentered).
+    // Default is 1.0 (legacy rho_crit behaviour) so existing GPU
+    // callers that never call this are unaffected.
+    void set_rho_mult(double m) { _rho_mult = m; }
+
     __device__ __host__ double
-    operator()(double r, double rmis, double lnM) const 
+    operator()(double r, double rmis, double lnM) const
     {
       double const rho_crit = _rhoc;
       double const delta_c = (200.0 * _c * _c * _c / 3.0) / (std::log(1.0 + _c) - _c / (1.0 + _c));
@@ -101,9 +113,9 @@ namespace y3_cuda {
       double const xmis = rmis / r_s;
 
       double const log_unfw = _nfwProfile.clamp(std::log(x), std::log(xmis));
-      
+
       // normalization term defined in Wright & Brainerd 2000
-      double const norm = 2 * r_s * delta_c * rho_crit ;
+      double const norm = 2 * r_s * delta_c * rho_crit * _rho_mult;
       double const nfw = norm * std::exp(log_unfw);
 
       // Conversion from Msun/Mpc^2 to Msun/h pc^2
@@ -113,6 +125,7 @@ namespace y3_cuda {
   private:
     double const _c;
     double const _rhoc;
+    double       _rho_mult;
     gpu_support::Interp2D _nfwProfile;
   };
 }
