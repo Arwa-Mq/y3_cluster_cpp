@@ -203,69 +203,63 @@ namespace y3_cluster {
 
 
   // =====================================================================
-  // ShearPrjEvaluator -- single-pass fixed-GL evaluator that
-  // co-computes Sigma_prj, DSigma_prj and g_t^prj per the May-2026
-  // RichnessSelection recipe (see /pscratch/.../RichnessSelection/
-  // docs/sigma_prj_refactor.md, mirroring richness_selection/sigma_prj.py).
+  // sp_detail::ShearPrjCore -- shared cache + query backbone for the
+  // fixed-GL projection evaluators.  Owns every (lob, zob) slice cache
+  // and the per-R Smis/DSmis tables.  Three thin wrappers below expose
+  // it as separate CosmoSIS modules:
   //
-  // Recipe:
+  //   SigmaPrjEvaluator   -> {Sigma_total,  Sigma_rnd,  Sigma_cl}
+  //   DSigmaPrjEvaluator  -> {DSigma_total, DSigma_rnd, DSigma_cl}
+  //   ShearPrjEvaluator   -> {gt_total,     gt_rnd,     gt_cl}
+  //
+  // Recipe (unchanged from the retired single-class ShearPrjEvaluator):
   //   * THETA is the outer integral; log-GL on segments split at sorted
   //     breakpoints { lower, theta_excl_o, theta_R(R_i) for each R_i,
   //     theta_lam, 2*theta_lam, theta_max }.  Shared per (lob, zob)
   //     slice; every R on that slice lands its own theta_R breakpoint.
   //   * Inner (z, lnM): z via the adaptive ring + fg/bg log-|Dchi| grid
   //     (build_z_grid_, matches SelBias._z_grid); lnM via fixed GL.
-  //   * Exclusion: per-z LoS slab  theta > theta_excl(z) with
-  //     cos theta_excl(z) = (chi_z^2 + chi_o^2 - R_excl^2)/(2 chi_z chi_o).
-  //     No 3-D ball mask.
+  //   * Exclusion: per-z LoS slab  theta > theta_excl(z).
   //   * rnd / cl split:
-  //       Sigma_rnd = 2pi int dtheta sin(theta) int dz dV w_z(z)
-  //                   int dM n(M,z) Sigma_mis(R|M,z,theta D_A_o)
-  //       Sigma_cl  = 2pi int dtheta sin(theta) b_sel(theta)
-  //                   int dz dV w_z(z) xi_NL(|Dr|, zob) 1[theta>theta_excl(z)]
-  //                   int dM n(M,z) b(M,z) Sigma_mis(R|M,z,theta D_A_o)
-  //       Sigma_total = Sigma_rnd + Sigma_cl     <- default published value
-  //     Same for DSigma; gamma_t uses the totals
-  //       gamma_t_total = DSigma_total * Sigma_crit_inv
-  //     (the old 1/(1 - Sigma_total * sci) denominator was retired
-  //     2026-05-11; see note near the g_t lambda).
-  //     We also publish rnd/cl subfields for all three observables.
-  //
-  // Output:  n_outputs = 9 cells published into datablock as
-  //     sigma_prj/{vals, rnd, cl},
-  //     dsigma_prj/{vals, rnd, cl},
-  //     shear_prj/{vals, rnd, cl}.
+  //       X_rnd = 2pi int dtheta sin(theta) int dz dV w_z(z)
+  //               int dM n(M,z) X_mis(R|M,z,theta D_A_o)
+  //       X_cl  = 2pi int dtheta sin(theta) b_sel(theta)
+  //               int dz dV w_z(z) xi_NL(|Dr|, zob) 1[theta>theta_excl(z)]
+  //               int dM n(M,z) b(M,z) X_mis(R|M,z,theta D_A_o)
+  //     where X is Sigma_mis or DSigma_mis.  gamma_t = DSigma * Sigma_crit_inv
+  //     (linear; reduced-shear denominator retired 2026-05-11).
   // =====================================================================
-  class ShearPrjEvaluator {
+  namespace sp_detail {
+
+  class ShearPrjCore {
    public:
     using grid_t       = y3_cluster::grid_t<4>;
     using grid_point_t = grid_t::value_type;
 
-    static constexpr std::size_t n_outputs = 9;
-
-    explicit ShearPrjEvaluator(cosmosis::DataBlock& cfg)
-      : N_lnm_(cfg.has_val(module_label(), "n_lnm")
-                 ? cfg.view<int>(module_label(), "n_lnm") : 24)
-      , N_per_seg_(cfg.has_val(module_label(), "n_per_seg")
-                     ? cfg.view<int>(module_label(), "n_per_seg") : 30)
-      , N_zring_(cfg.has_val(module_label(), "n_zring")
-                   ? cfg.view<int>(module_label(), "n_zring") : 20)
-      , N_zouter_(cfg.has_val(module_label(), "n_zouter")
-                    ? cfg.view<int>(module_label(), "n_zouter") : 20)
-      , zt_lo_(cfg.view<double>(module_label(), "zt_low"))
-      , zt_hi_(cfg.view<double>(module_label(), "zt_high"))
-      , lnm_lo_(cfg.view<double>(module_label(), "lnm_low"))
-      , lnm_hi_(cfg.view<double>(module_label(), "lnm_high"))
-      , R_max_cMpch_(cfg.has_val(module_label(), "R_max_cMpch")
-                       ? cfg.view<double>(module_label(), "R_max_cMpch")
+    explicit ShearPrjCore(cosmosis::DataBlock& cfg, char const* section)
+      : section_(section)
+      , N_lnm_(cfg.has_val(section, "n_lnm")
+                 ? cfg.view<int>(section, "n_lnm") : 24)
+      , N_per_seg_(cfg.has_val(section, "n_per_seg")
+                     ? cfg.view<int>(section, "n_per_seg") : 30)
+      , N_zring_(cfg.has_val(section, "n_zring")
+                   ? cfg.view<int>(section, "n_zring") : 20)
+      , N_zouter_(cfg.has_val(section, "n_zouter")
+                    ? cfg.view<int>(section, "n_zouter") : 20)
+      , zt_lo_(cfg.view<double>(section, "zt_low"))
+      , zt_hi_(cfg.view<double>(section, "zt_high"))
+      , lnm_lo_(cfg.view<double>(section, "lnm_low"))
+      , lnm_hi_(cfg.view<double>(section, "lnm_high"))
+      , R_max_cMpch_(cfg.has_val(section, "R_max_cMpch")
+                       ? cfg.view<double>(section, "R_max_cMpch")
                        : 30.0)   // Costanzi-2026 convention: theta_max = R_max/D_A
     {
       p_op_detail::gl_nodes(lnm_lo_, lnm_hi_, N_lnm_, lnm_x_, lnm_w_);
 
       // Optional user-supplied extra breakpoints (radians).  Passed
       // through to sp_detail::build_theta_grid; default empty.
-      if (cfg.has_val(module_label(), "theta_breakpoints")) {
-        extra_breakpoints_ = get_vector_double(cfg, module_label(),
+      if (cfg.has_val(section, "theta_breakpoints")) {
+        extra_breakpoints_ = get_vector_double(cfg, section,
                                                "theta_breakpoints");
       }
 
@@ -273,8 +267,8 @@ namespace y3_cluster {
       // Default: DES-Y3 arithmetic centres {25, 37.5, 52.5, 130}
       // (edges [20, 30, 45, 60, 200]).  Override via the ini
       //   lob_centers = 25 37.5 52.5 130
-      if (cfg.has_val(module_label(), "lob_centers")) {
-        lob_centers_ = get_vector_double(cfg, module_label(),
+      if (cfg.has_val(section, "lob_centers")) {
+        lob_centers_ = get_vector_double(cfg, section,
                                          "lob_centers");
       } else {
         auto const& dflt = sp_detail::default_lob_centers();
@@ -298,10 +292,10 @@ namespace y3_cluster {
       // Parse the wall-grid axes so we can pre-plan sample-level caches
       // keyed on unique (lam_bin, zob, R) tuples.  get_vector_double
       // coerces int-arrays (lambda_bin) to double on the fly.
-      auto const lamb = get_vector_double(cfg, module_label(), "lambda_bin");
-      auto const zlo  = get_vector_double(cfg, module_label(), "zo_low");
-      auto const zhi  = get_vector_double(cfg, module_label(), "zo_high");
-      auto const rad  = get_vector_double(cfg, module_label(), "radii");
+      auto const lamb = get_vector_double(cfg, section, "lambda_bin");
+      auto const zlo  = get_vector_double(cfg, section, "zo_low");
+      auto const zhi  = get_vector_double(cfg, section, "zo_high");
+      auto const rad  = get_vector_double(cfg, section, "radii");
       std::size_t const Ng = lamb.size();
 
       // Unique (lam_bin, zob) pairs -> determines D_A_o, R_excl, bsel slice.
@@ -630,19 +624,11 @@ namespace y3_cluster {
       }
     }
 
-    // Returns the 9-vector
-    //   { sigma_prj_total, sigma_prj_rnd, sigma_prj_cl,
-    //     dsigma_prj_total, dsigma_prj_rnd, dsigma_prj_cl,
-    //     g_t_total,        g_t_rnd,       g_t_cl }
-    // at the requested (lob_bin, zob, R) grid point.
-    std::array<double, 9>
-    evaluate(grid_point_t const& pt) const
+    // Locate (lob_bin, zob, R) in the wall-grid; returns (lzob_idx,
+    // iR_on_slice).  Linear scan; Ng=120 in production.
+    std::pair<int, int>
+    locate_(int lob_bin, double zob, double R) const
     {
-      int    const lob_bin = static_cast<int>(pt[0]);
-      double const zob     = 0.5 * (pt[1] + pt[2]);
-      double const R       = pt[3];
-
-      // Locate this point in the wall-grid axes.
       int gp_idx = -1;
       for (std::size_t i = 0; i != gp_zob_.size(); ++i) {
         if (gp_lam_bin_[i] == lob_bin &&
@@ -651,90 +637,95 @@ namespace y3_cluster {
       }
       int const lzob_idx = gp_lzob_idx_[gp_idx];
       int iR_on_slice = -1;
-      {
-        auto const& Rs = lzob_Rs_[lzob_idx];
-        for (std::size_t k = 0; k != Rs.size(); ++k) {
-          if (std::abs(Rs[k] - R) < 1.0e-12) {
-            iR_on_slice = int(k);
-            break;
-          }
+      auto const& Rs = lzob_Rs_[lzob_idx];
+      for (std::size_t k = 0; k != Rs.size(); ++k) {
+        if (std::abs(Rs[k] - R) < 1.0e-12) {
+          iR_on_slice = int(k);
+          break;
         }
       }
-      double const chi_o  = lzob_chi_o_ [lzob_idx];
-      double const R_excl = lzob_R_excl_[lzob_idx];
-      double const sci_v  = lzob_sci_   [lzob_idx];
+      return {lzob_idx, iR_on_slice};
+    }
 
-      // Per-(lob, zob) theta tables (shared across all R on this slice).
-      auto const& theta_k = lzob_theta_    [lzob_idx];
-      auto const& cos_k   = lzob_cos_theta_[lzob_idx];
-      auto const& geom_k  = lzob_geom_     [lzob_idx];    // w_theta * 2pi sin theta
-      auto const& bsel_k  = lzob_bsel_     [lzob_idx];
-      std::size_t const Nth = theta_k.size();
+    // Inner-product over (theta, M) of a per-(theta, M) miscentering
+    // table (Smis or DSmis) with the z-contracted M-vectors.  Returns
+    // {total = rnd + cl, rnd, cl}.  Used by sigma_prj/dsigma_prj.
+    std::array<double, 3>
+    accumulate_(int lzob_idx, double const* table) const
+    {
+      auto const& geom_k  = lzob_geom_[lzob_idx];
+      auto const& bsel_k  = lzob_bsel_[lzob_idx];
+      auto const& wrnd_M  = lzob_wrnd_M_[lzob_idx];
+      auto const& wcl_M   = lzob_wcl_M_ [lzob_idx];
+      std::size_t const Nth = lzob_theta_[lzob_idx].size();
 
-      // Per-R NFW caches on this slice's theta grid.
-      double const* const Smis =
-          &lzob_Smis_ [lzob_idx][iR_on_slice * Nth * N_lnm_];
-      double const* const DSmis =
-          &lzob_DSmis_[lzob_idx][iR_on_slice * Nth * N_lnm_];
-
-      // All z-axis work was pre-contracted in set_sample into M-vectors.
-      // evaluate() is a single theta-outer loop: dot Smis(R|theta, M) with
-      // the z-summed M-vectors.
-      //   wrnd_M[iM]          -- the "1" piece (R-free, theta-free)
-      //   wcl_M[it * Nm + iM] -- the "b xi_NL b_sel" piece (theta-specific)
-      auto const& wrnd_M = lzob_wrnd_M_[lzob_idx];
-      auto const& wcl_M  = lzob_wcl_M_ [lzob_idx];
-
-      double acc_S_rnd  = 0.0, acc_S_cl  = 0.0;
-      double acc_DS_rnd = 0.0, acc_DS_cl = 0.0;
-
+      double acc_rnd = 0.0, acc_cl = 0.0;
       for (std::size_t it = 0; it != Nth; ++it) {
         double const g    = geom_k[it];
         double const bsel = bsel_k[it];
-        double const* Srow     = &Smis [it * N_lnm_];
-        double const* DSrow    = &DSmis[it * N_lnm_];
-        double const* wcl_row  = &wcl_M[it * N_lnm_];
+        double const* row     = &table[it * N_lnm_];
+        double const* wcl_row = &wcl_M[it * N_lnm_];
 
-        double s_r = 0.0, ds_r = 0.0;
-        double s_c = 0.0, ds_c = 0.0;
-        #pragma omp simd reduction(+:s_r,ds_r,s_c,ds_c)
+        double a_r = 0.0, a_c = 0.0;
+        #pragma omp simd reduction(+:a_r,a_c)
         for (std::size_t iM = 0; iM != N_lnm_; ++iM) {
-          double const Sv  = Srow [iM];
-          double const DSv = DSrow[iM];
-          s_r  += wrnd_M [iM] * Sv;
-          ds_r += wrnd_M [iM] * DSv;
-          s_c  += wcl_row[iM] * Sv;
-          ds_c += wcl_row[iM] * DSv;
+          double const v = row[iM];
+          a_r += wrnd_M [iM] * v;
+          a_c += wcl_row[iM] * v;
         }
-        acc_S_rnd  += g * s_r;
-        acc_DS_rnd += g * ds_r;
-        acc_S_cl   += g * bsel * s_c;
-        acc_DS_cl  += g * bsel * ds_c;
+        acc_rnd += g * a_r;
+        acc_cl  += g * bsel * a_c;
       }
+      double const total = acc_rnd + acc_cl;
+      return {total, acc_rnd, acc_cl};
+    }
 
-      double const sigma_rnd   = acc_S_rnd;
-      double const sigma_cl    = acc_S_cl;
-      double const sigma_total = sigma_rnd + sigma_cl;
-      double const dsigma_rnd   = acc_DS_rnd;
-      double const dsigma_cl    = acc_DS_cl;
-      double const dsigma_total = dsigma_rnd + dsigma_cl;
+   public:
+    // Σ_prj at (lob_bin, zob, R): {total, rnd, cl}.
+    std::array<double, 3>
+    sigma_prj(grid_point_t const& pt) const
+    {
+      int    const lob_bin = static_cast<int>(pt[0]);
+      double const zob     = 0.5 * (pt[1] + pt[2]);
+      double const R       = pt[3];
+      auto const [lzob_idx, iR] = locate_(lob_bin, zob, R);
+      std::size_t const Nth = lzob_theta_[lzob_idx].size();
+      double const* const Smis =
+          &lzob_Smis_[lzob_idx][iR * Nth * N_lnm_];
+      return accumulate_(lzob_idx, Smis);
+    }
 
-      // γ_t = ΔΣ · Σ_crit^-1 (linear in ΔΣ).  The old reduced-shear
-      // g_t = γ_t / (1 - Σ · Σ_crit^-1) was retired 2026-05-11: its
-      // denominator blocks the additive decomposition
-      //    γ_t^total(R) = γ_t^1h(R) + γ_t^prj(R)
-      // that the likelihood relies on to combine this module with
-      // Shear1hSel.
-      auto g_t = [sci_v](double /*s*/, double ds) { return ds * sci_v; };
-      double const gt_total = g_t(sigma_total, dsigma_total);
-      double const gt_rnd   = g_t(sigma_rnd,   dsigma_rnd);
-      double const gt_cl    = g_t(sigma_cl,    dsigma_cl);
+    // ΔΣ_prj at (lob_bin, zob, R): {total, rnd, cl}.
+    std::array<double, 3>
+    dsigma_prj(grid_point_t const& pt) const
+    {
+      int    const lob_bin = static_cast<int>(pt[0]);
+      double const zob     = 0.5 * (pt[1] + pt[2]);
+      double const R       = pt[3];
+      auto const [lzob_idx, iR] = locate_(lob_bin, zob, R);
+      std::size_t const Nth = lzob_theta_[lzob_idx].size();
+      double const* const DSmis =
+          &lzob_DSmis_[lzob_idx][iR * Nth * N_lnm_];
+      return accumulate_(lzob_idx, DSmis);
+    }
 
-      return {
-        sigma_total,  sigma_rnd,  sigma_cl,
-        dsigma_total, dsigma_rnd, dsigma_cl,
-        gt_total,     gt_rnd,     gt_cl
-      };
+    // gamma_t^prj = ΔΣ_prj · Σ_crit^-1 (linear; reduced-shear
+    // denominator retired 2026-05-11 to preserve the additive
+    // decomposition γ_t^total = γ_t^1h + γ_t^prj used by the
+    // likelihood).
+    std::array<double, 3>
+    shear_prj(grid_point_t const& pt) const
+    {
+      int    const lob_bin = static_cast<int>(pt[0]);
+      double const zob     = 0.5 * (pt[1] + pt[2]);
+      double const R       = pt[3];
+      auto const [lzob_idx, iR] = locate_(lob_bin, zob, R);
+      std::size_t const Nth = lzob_theta_[lzob_idx].size();
+      double const* const DSmis =
+          &lzob_DSmis_[lzob_idx][iR * Nth * N_lnm_];
+      auto const ds = accumulate_(lzob_idx, DSmis);
+      double const sci_v = lzob_sci_[lzob_idx];
+      return {ds[0] * sci_v, ds[1] * sci_v, ds[2] * sci_v};
     }
 
     // --- Ring + fg/bg log-|Δchi| zt grid -----------------------------------
@@ -861,37 +852,16 @@ namespace y3_cluster {
       return {Bs, Bl};
     }
 
-    static char const* module_label() { return "shear_prj"; }
-
-    static std::array<char const*, 9>
-    output_sections()
-    {
-      return {
-        "sigma_prj",     "sigma_prj",     "sigma_prj",
-        "dsigma_prj",    "dsigma_prj",    "dsigma_prj",
-        "shear_prj",     "shear_prj",     "shear_prj"
-      };
-    }
-
-    static std::array<char const*, 9>
-    output_names()
-    {
-      return {
-        "vals", "rnd", "cl",
-        "vals", "rnd", "cl",
-        "vals", "rnd", "cl"
-      };
-    }
-
     static grid_t
-    make_grid_points(cosmosis::DataBlock& cfg)
+    make_grid_points(cosmosis::DataBlock& cfg, char const* section)
     {
       return y3_cluster::make_grid_points_wall_of_numbers(
-          cfg, module_label(),
+          cfg, section,
           "lambda_bin", "zo_low", "zo_high", "radii");
     }
 
    private:
+    char const* section_;
     std::size_t N_lnm_, N_per_seg_;
     std::size_t N_zring_, N_zouter_;
     double zt_lo_, zt_hi_;
@@ -968,8 +938,101 @@ namespace y3_cluster {
     double h0_            = 1.0;
   };
 
+  }  // namespace sp_detail
+
   // =====================================================================
-  // ShearPrjGsl -- same integrand as ShearPrjEvaluator, but the
+  // SigmaPrjEvaluator / DSigmaPrjEvaluator / ShearPrjEvaluator --
+  // thin CosmoSIS wrappers around sp_detail::ShearPrjCore.  Each one
+  // owns its own ShearPrjCore (separate cache) and reads its own
+  // [section] block from the .ini.  Output is the {total, rnd, cl}
+  // triple for one observable; the three classes mirror the public
+  // API expected by CosmoSISScalarEvaluatorModule (constructor +
+  // set_sample + evaluate + module_label + output_sections +
+  // output_names + make_grid_points).
+  // =====================================================================
+  class SigmaPrjEvaluator {
+   public:
+    using grid_t       = sp_detail::ShearPrjCore::grid_t;
+    using grid_point_t = sp_detail::ShearPrjCore::grid_point_t;
+    static constexpr std::size_t n_outputs = 3;
+
+    explicit SigmaPrjEvaluator(cosmosis::DataBlock& cfg)
+      : core_(cfg, module_label()) {}
+
+    void set_sample(cosmosis::DataBlock& s) { core_.set_sample(s); }
+
+    std::array<double, 3>
+    evaluate(grid_point_t const& pt) const { return core_.sigma_prj(pt); }
+
+    static char const* module_label() { return "sigma_prj"; }
+    static std::array<char const*, 3>
+    output_sections() { return {"sigma_prj", "sigma_prj", "sigma_prj"}; }
+    static std::array<char const*, 3>
+    output_names() { return {"vals", "rnd", "cl"}; }
+    static grid_t
+    make_grid_points(cosmosis::DataBlock& cfg)
+    { return sp_detail::ShearPrjCore::make_grid_points(cfg, module_label()); }
+
+   private:
+    sp_detail::ShearPrjCore core_;
+  };
+
+  class DSigmaPrjEvaluator {
+   public:
+    using grid_t       = sp_detail::ShearPrjCore::grid_t;
+    using grid_point_t = sp_detail::ShearPrjCore::grid_point_t;
+    static constexpr std::size_t n_outputs = 3;
+
+    explicit DSigmaPrjEvaluator(cosmosis::DataBlock& cfg)
+      : core_(cfg, module_label()) {}
+
+    void set_sample(cosmosis::DataBlock& s) { core_.set_sample(s); }
+
+    std::array<double, 3>
+    evaluate(grid_point_t const& pt) const { return core_.dsigma_prj(pt); }
+
+    static char const* module_label() { return "dsigma_prj"; }
+    static std::array<char const*, 3>
+    output_sections() { return {"dsigma_prj", "dsigma_prj", "dsigma_prj"}; }
+    static std::array<char const*, 3>
+    output_names() { return {"vals", "rnd", "cl"}; }
+    static grid_t
+    make_grid_points(cosmosis::DataBlock& cfg)
+    { return sp_detail::ShearPrjCore::make_grid_points(cfg, module_label()); }
+
+   private:
+    sp_detail::ShearPrjCore core_;
+  };
+
+  class ShearPrjEvaluator {
+   public:
+    using grid_t       = sp_detail::ShearPrjCore::grid_t;
+    using grid_point_t = sp_detail::ShearPrjCore::grid_point_t;
+    static constexpr std::size_t n_outputs = 3;
+
+    explicit ShearPrjEvaluator(cosmosis::DataBlock& cfg)
+      : core_(cfg, module_label()) {}
+
+    void set_sample(cosmosis::DataBlock& s) { core_.set_sample(s); }
+
+    std::array<double, 3>
+    evaluate(grid_point_t const& pt) const { return core_.shear_prj(pt); }
+
+    static char const* module_label() { return "shear_prj"; }
+    static std::array<char const*, 3>
+    output_sections() { return {"shear_prj", "shear_prj", "shear_prj"}; }
+    static std::array<char const*, 3>
+    output_names() { return {"vals", "rnd", "cl"}; }
+    static grid_t
+    make_grid_points(cosmosis::DataBlock& cfg)
+    { return sp_detail::ShearPrjCore::make_grid_points(cfg, module_label()); }
+
+   private:
+    sp_detail::ShearPrjCore core_;
+  };
+
+  // =====================================================================
+  // ShearPrjGsl -- same integrand as the ShearPrjCore family, but the
   // outer z-integral is driven by GSL QAGP (piecewise-QAG with an
   // explicit singular point at z=zob).  QAGP adapts around the xi_nl(Δchi)
   // peak by construction, so no ring+fg/bg grid is needed.  Inner (lnM, θ)

@@ -6,6 +6,37 @@ from scipy.interpolate import interp1d
 from scipy.special import erf
 import cluster_toolkit as ct
 
+# ---- Disable GSL's abort-on-error handler --------------------------------
+# cluster_toolkit links libgsl (libgsl.so.25 in the y3cl_je conda env).
+# At extreme cosmologies (e.g. high log10As, low Omega_m) GSL's adaptive
+# qag integrator inside cluster_toolkit.peak_height.nu_at_M can hit
+#   "gsl: qag.c:247: ERROR: roundoff error prevents tolerance from being achieved"
+# and the default GSL handler calls abort(), killing the worker process.
+# Replace it with the no-op handler (NULL pointer) so GSL routines just
+# return non-zero status codes; cluster_toolkit then propagates a Python
+# exception instead of aborting.  Apriori/emcee samplers can then
+# gracefully assign logL = -inf to the offending draw.
+def _disable_gsl_abort_handler() -> None:
+    import ctypes
+    try:
+        # cluster_toolkit's linked libgsl.  Use ctypes.util.find_library
+        # as fallback if the cffi handle isn't introspectable.
+        import ctypes.util
+        lib_path = ctypes.util.find_library("gsl")
+        if lib_path is None:
+            # Fallback: rely on cluster_toolkit having loaded libgsl already.
+            lib_path = "libgsl.so.25"
+        gsl = ctypes.CDLL(lib_path, mode=ctypes.RTLD_GLOBAL)
+        gsl.gsl_set_error_handler_off.restype = ctypes.c_void_p
+        gsl.gsl_set_error_handler_off()
+        print("[halo_model_cosmosis] GSL abort-on-error handler disabled "
+              f"(via {lib_path})", flush=True)
+    except OSError as exc:
+        print(f"[halo_model_cosmosis] WARNING: could not disable GSL "
+              f"abort handler: {exc}", flush=True)
+
+_disable_gsl_abort_handler()
+
 from astropy.constants import G
 
 from haloModel import biasModel, lensingModel, scaleShiftCosmo
