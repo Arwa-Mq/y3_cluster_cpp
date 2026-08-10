@@ -990,62 +990,76 @@ $1$s target.
 \label{sec:cpp_impl}
 
 The prediction above has now been implemented, measured, and shipped
-\emph{in place}: \texttt{Shear1hMisSel.so} itself is now a fixed-GL
-evaluator (\pyfile{src/models/n\_operator\_sel\_gl\_t.hh}, driver
-\pyfile{src/modules/num\_counts\_sel/Shear1hMis.cc}), in the same
-family as \texttt{b\_sel\_marg} and
-\texttt{shear\_prj\_frozen\_physics}: no Cuhre calls at all. Per
-sample it performs one fixed Gauss--Legendre $(z,\lnM)$ pass per bin
-(defaults $n_{\lnM}=96$, $n_z=64$ nodes) to build the exact
+\emph{in place}: \texttt{Shear1hMisSel.so} and \texttt{NumCountsSel.so}
+themselves are now fixed-GL evaluators
+(\pyfile{src/models/n\_operator\_sel\_gl\_t.hh}, drivers
+\pyfile{src/modules/num\_counts\_sel/\{Shear1hMis,NumCounts\}.cc}), in
+the same family as \texttt{b\_sel\_marg} and
+\texttt{shear\_prj\_frozen\_physics}: no Cuhre calls at all. A shared
+core performs one fixed Gauss--Legendre $(z,\lnM)$ pass per bin per
+sample (defaults $n_{\lnM}=96$, $n_z=64$ nodes) to build the exact
 z-marginalised weight $\widehat W_{ij}(\lnM)$ of
-eq.~\eqref{eq:reduction} --- including the $z$-only
-$\Sigma_{\rm crit}^{-1}(z)$ factor, which folds into the same integral
---- and then serves every radius from the cached weight. Two service
-methods are ini-selectable (\texttt{method = exact | idea2}):
-\emph{exact} (the default) evaluates the remaining 1-D mass sum
+eq.~\eqref{eq:reduction}. For \texttt{NumCountsSel} the observable
+\emph{is} the weight's norm ($f=1$), so the module reduces to reading
+off $\int d\lnM\,\widehat W_{ij}$; for \texttt{Shear1hMisSel} the
+weight additionally folds in the $z$-only
+$\Sigma_{\rm crit}^{-1}(z)$ factor and every radius is served from the
+cached weight. Two service methods are ini-selectable for the shear
+module (\texttt{method = exact | idea2}): \emph{exact} (the default)
+evaluates the remaining 1-D mass sum
 $\sum_k w_k \widehat W_{ij,k}\,\Phi_i(R,\lnM_k)$ per (bin, $R$) point;
 \emph{idea2} uses eq.~\eqref{eq:approach2_general} at $n\le2$ with a
-3-point central-difference stencil for $\Phi''$. The module label,
-grid semantics (\texttt{bin\_index} $\times$ \texttt{r\_perp}
-cartesian product, bin-slow/$R$-fast) and output section
-(\texttt{shear1hmissel/vals}) are unchanged, so the production ini and
+3-point central-difference stencil for $\Phi''$. Module labels, grid
+semantics (\texttt{bin\_index} wall; \texttt{bin\_index} $\times$
+\texttt{r\_perp} cartesian product, bin-slow/$R$-fast) and output
+sections (\texttt{numcountssel/vals}, \texttt{shear1hmissel/vals}) are
+unchanged, so the production ini and
 \pyfile{y3\_buzzard/likelihood\_cp.py} work as-is --- the retired
 adaptive-integrator knobs (\texttt{algorithm}, \texttt{eps\_rel},
-\texttt{max\_eval}, \dots) are simply ignored.
-(\texttt{NumCountsSel} would factor the same way --- its observable is
-just $\int d\lnM\,\widehat W_{ij}$ with $f=1$, and a prototype
-measured $0.088\to0.021$\,s --- but it is deliberately left on Cuhre
-for now to keep this change's blast radius to the shear
-observable.)\footnote{One implementation note: the output section name
-is deliberately hardcoded rather than ini-configurable. A CosmoSIS
-\texttt{[DEFAULT]} block propagates its keys into \emph{every} module
-section, so an \texttt{output\_section} knob silently redirected the
-module's output to the vestigial \texttt{cluster\_observables\_full}
-value in the production ini's \texttt{[DEFAULT]} --- found the hard
-way during validation.}
+\texttt{max\_eval}, \dots) are simply ignored.\footnote{One
+implementation note: the output section names are deliberately
+hardcoded rather than ini-configurable. A CosmoSIS \texttt{[DEFAULT]}
+block propagates its keys into \emph{every} module section, so an
+\texttt{output\_section} knob silently redirected the modules' output
+to the vestigial \texttt{cluster\_observables\_full} value in the
+production ini's \texttt{[DEFAULT]} --- found the hard way during
+validation.}
+
+Beyond the mean speed-up, fixed GL makes the cost
+\emph{deterministic}. Adaptive Cuhre's runtime depends strongly on the
+sampled parameter point: over $\sim10^6$ MCMC realisations of the
+production chain, \texttt{NumCountsSel} averaged $0.107$\,s but
+ranged up to $0.98$\,s ($9\times$ its mean), and
+\texttt{Shear1hMisSel} averaged $0.575$\,s with a $4.0$\,s tail
+($7\times$) --- the integrator running wild trying to converge at hard
+corners of parameter space. The GL evaluators execute an identical
+node count at every sample, so those tails vanish by construction.
 
 Measured on the extraction pipeline
 (\pyfile{docs/figs/real\_pipeline\_extract.ini}, login node, full
-\texttt{bin\_index} 0--11), against the retired Cuhre module:
+\texttt{bin\_index} 0--11), against the retired Cuhre modules:
 \begin{center}
 \small
 \begin{tabular}{l r r}
 \toprule
  & Cuhre (old) [s] & fixed-GL (new) [s] \\
 \midrule
+\texttt{NumCountsSel}   & 0.088 & \textbf{0.021} \\
 \texttt{Shear1hMisSel}  & 0.470 & \textbf{0.028} \\
 \bottomrule
 \end{tabular}
 \end{center}
-The full production pipeline (\texttt{mock\_mcmc\_cp\_camb.ini},
-\texttt{test} sampler, likelihood included) now completes in
-\textbf{0.78\,s} per sample, down from 1.2\,s --- under the 1\,s
-target, with the converted module costing $4\%$ of the budget instead
-of $38\%$. \texttt{idea2} buys only a few ms more than \texttt{exact}
-while adding its truncation error, confirming
-\S\ref{sec:comparison}'s expectation that once the z-marginalisation
-is in place the exact 1-D sum is already essentially free;
-\texttt{exact} is the production default.
+(\texttt{NumCountsSel} agrees with its Cuhre predecessor to
+$3.1\times10^{-4}$ across all 12 bins, inside the old module's own
+\texttt{eps\_rel}$=1.5\times10^{-3}$.) The full production pipeline
+(\texttt{mock\_mcmc\_cp\_camb.ini}, \texttt{test} sampler, likelihood
+included) now completes in \textbf{0.70\,s} per sample, down from
+1.2\,s --- under the 1\,s target, with the two converted modules
+together costing $7\%$ of the budget instead of $46\%$. \texttt{idea2}
+buys only a few ms more than \texttt{exact} while adding its
+truncation error, confirming \S\ref{sec:comparison}'s expectation that
+once the z-marginalisation is in place the exact 1-D sum is already
+essentially free; \texttt{exact} is the production default.
 
 Accuracy, against the old module's own output:
 \begin{itemize}

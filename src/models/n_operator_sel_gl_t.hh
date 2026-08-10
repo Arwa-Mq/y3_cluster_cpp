@@ -1,32 +1,38 @@
-// Fixed-GL N-operator evaluator -- the z-marginalised replacement for
-// the Cuhre-based Shear1hMisSel module.
+// Fixed-GL N-operator evaluators -- the z-marginalised replacements for
+// the Cuhre-based NumCountsSel and Shear1hMisSel modules.
 //
-// The observable has the structure (docs/shear1h_radial_factorization.tex)
+// Both observables share the structure (docs/shear1h_radial_factorization.tex)
 //
-//   N_ij(R)   = int dlnM  Wij(lnM) * Phi_i(R, lnM)
+//   N_ij[f]   = int dlnM  Wij(lnM) * f(...)
 //   Wij(lnM)  = int dz  n(M,z) dV/dOmega/dz(z) Omega(z) S_ij(lnM,z)
-//               * Sigma_crit_inv(z)
+//               [ * Sigma_crit_inv(z), shear only ]
 //
-// where every z-dependent factor lives in Wij and the miscentered
-// 1-halo profile Phi_i is z-free (fixed concentration, fixed rho_crit).
-// Building Wij once per sample on fixed Gauss-Legendre nodes therefore
-// removes the entire per-grid-point adaptive quadrature the old module
-// ran -- one 2-D Cuhre integral per (bin, radius) pair, 12 x 10 = 120
-// per sample -- leaving a single GL pass per bin plus trivial dot
-// products per radius (~16x faster).
+// where every z-dependent factor lives in Wij and the remaining factor f
+// is z-free: f = 1 for number counts, f = Phi_i(R, lnM) (the miscentered
+// 1-halo profile, fixed concentration and rho_crit) for shear.  Building
+// Wij once per sample on fixed Gauss-Legendre nodes removes the entire
+// per-grid-point adaptive quadrature the old modules ran: NumCountsSel
+// one 2-D Cuhre integral per bin (12 per sample), Shear1hMisSel one per
+// (bin, radius) pair (120 per sample).
+//
+// Beyond the mean speed-up, fixed GL makes the cost DETERMINISTIC.
+// Adaptive Cuhre's runtime varies strongly with the sampled parameter
+// point (measured over ~1e6 MCMC realisations: NumCountsSel mean
+// 0.107 s but max 0.98 s, Shear1hMisSel mean 0.575 s but max 4.0 s);
+// the GL evaluators do an identical node count at every sample.
 //
 // SelGLCore builds Wij (and its plain lnM moments) on the GL grid;
-// Shear1hMisSelGL wraps it behind the
+// NumCountsSelGL / Shear1hMisSelGL wrap it behind the
 // DEFINE_COSMOSIS_SCALAR_EVALUATOR_MODULE contract with the SAME module
-// label, grid semantics (bin_index x r_perp cartesian product, bin
-// slow, R fast) and output section (shear1hmissel/vals) as the module
-// it replaces, so production inis and y3_buzzard/likelihood_cp.py work
-// unchanged.  The old adaptive-integrator knobs (algorithm, eps_rel,
-// eps_abs, max_eval, use_cartesian_product) are simply ignored; the new
-// optional knobs are n_lnm (default 96) and n_z (default 64 -- S_ij has
-// compact z-support, ~0.15 wide inside the [zt_low, zt_high] window,
-// and 32 nodes leave a ~2e-3 residual vs a 128-node reference where 64
-// reach ~4e-4).
+// labels, grid semantics (bin_index wall / bin_index x r_perp cartesian
+// product, bin slow, R fast) and output sections (numcountssel/vals,
+// shear1hmissel/vals) as the modules they replace, so production inis
+// and y3_buzzard/likelihood_cp.py work unchanged.  The old adaptive-
+// integrator knobs (algorithm, eps_rel, eps_abs, max_eval,
+// use_cartesian_product) are simply ignored; the new optional knobs are
+// n_lnm (default 96) and n_z (default 64 -- S_ij has compact z-support,
+// ~0.15 wide inside the [zt_low, zt_high] window, and 32 nodes leave a
+// ~2e-3 residual vs a 128-node reference where 64 reach ~4e-4).
 //
 // One deliberate physics change vs the old Shear1hMisSel: the richness
 // bin for R_lambda is bin_index % lob_centers.size() (the sel_function
@@ -166,6 +172,56 @@ namespace y3_cluster {
     };
 
   } // namespace nosel_gl_detail
+
+
+  // ---- NumCountsSel: N_ij = int dlnM Wij(lnM) --------------------------
+  class NumCountsSelGL {
+   public:
+    using grid_t       = y3_cluster::grid_t<1>;
+    using grid_point_t = grid_t::value_type;
+    static constexpr std::size_t n_outputs = 1;
+
+    explicit NumCountsSelGL(cosmosis::DataBlock& cfg)
+      : core_(cfg, module_label())
+    {}
+
+    void
+    set_sample(cosmosis::DataBlock& s)
+    {
+      core_.build_weights(s, /*include_sci=*/false);
+    }
+
+    std::array<double, n_outputs>
+    evaluate(grid_point_t const& pt) const
+    {
+      int const b = static_cast<int>(pt[0]);
+      if (b < 0 || static_cast<std::size_t>(b) >= core_.n_bins())
+        throw std::out_of_range(
+          "NumCountsSelGL: bin_index outside sel_function/S_stack range");
+      return {core_.norm(b)};
+    }
+
+    static char const* module_label() { return "NumCountsSel"; }
+
+    // NOTE: hardcoded, deliberately NOT an ini knob -- CosmoSIS [DEFAULT]
+    // blocks propagate keys like output_section into every module
+    // section, which would silently redirect the write.
+    static std::array<char const*, n_outputs>
+    output_sections()
+    {
+      return {"numcountssel"};
+    }
+
+    static grid_t
+    make_grid_points(cosmosis::DataBlock& cfg)
+    {
+      return y3_cluster::make_grid_points_wall_of_numbers(
+        cfg, module_label(), "bin_index");
+    }
+
+   private:
+    nosel_gl_detail::SelGLCore core_;
+  };
 
 
   // ---- Shear1hMisSel: N_ij(R) = int dlnM Wij(lnM) Phi_i(R, lnM) ---------
