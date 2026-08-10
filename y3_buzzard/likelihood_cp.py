@@ -24,6 +24,33 @@ invcov (2-D array) is also accepted and used as a matmul.
 logL = -0.5 * sum_obs delta^T C^-1 delta, summed over NC and Shear.
 
 Writes block["likelihoods", "likelihoods_like"].
+
+Log-space option (log_space = T in the [likelihoods] ini section)
+-----------------------------------------------------------------
+Both NC and shear span >1 decade, so the linear-space Gaussian is a
+poor model far from fiducial and the posterior is skewed/curved,
+which slows MCMC mixing.  Working in y = ln(observable) flattens this.
+
+We propagate the covariance with the delta method, linearized about
+the *fixed* data vector d* = data (NOT per-sample theory):
+
+    y = ln(d),  J = diag(1/d*)
+    C_y       = J C J^T          ->  C_y[i,j]   = C[i,j] / (d*_i d*_j)
+    C_y^{-1}                     ->  invcov_y[i,j] = d*_i d*_j invcov[i,j]
+
+i.e. invcov_log = invcov * outer(d*, d*)   (dense)
+                = invcov * d*^2            (diagonal)
+
+Because d* is fixed, C_y is constant across the chain: the
+normalization 1/2 ln det C_y and the change-of-variables Jacobian are
+both sample-independent constants that drop out of MCMC.  The chi2 is
+
+    chi2_log = (ln data - ln theory)^T invcov_log (ln data - ln theory)
+
+At theory == data this is zero (maximal logL), so closure tests still
+recover fiducial; to first order around fiducial chi2_log == chi2_lin,
+so only the off-fiducial geometry changes.  invcov_log is precomputed
+once in setup().
 """
 
 from __future__ import annotations
@@ -32,8 +59,8 @@ import numpy as np
 from cosmosis.datablock import option_section
 
 _NC_N_BINS = 12
-_SHEAR_N_R = 15         # radii per bin (Y1 radial binning)
-_SHEAR_N = _NC_N_BINS * _SHEAR_N_R   # 180
+_SHEAR_N_R = 10         # radii per bin (0.2-5 Mpc/h, matches JK sampling)
+_SHEAR_N = _NC_N_BINS * _SHEAR_N_R   # 120
 
 OBS = [
     ("NC",    _NC_N_BINS),
@@ -49,10 +76,28 @@ def _chi2(delta: np.ndarray, invcov: np.ndarray) -> float:
     raise ValueError(f"invcov ndim must be 1 or 2, got {invcov.ndim}")
 
 
+def _to_log_space(d: np.ndarray, ic: np.ndarray) -> np.ndarray:
+    """Delta-method invcov for y = ln(d), linearized about fixed d.
+
+    invcov_y[i,j] = d_i d_j invcov[i,j]  (dense)
+                  = d_i^2  invcov[i]      (diagonal)
+    Requires d > 0 (true for NC counts and Delta-Sigma shear).
+    """
+    if np.any(d <= 0.0):
+        raise ValueError("likelihood_cp: log_space requires data > 0; "
+                         f"found min(data)={d.min():.3e}")
+    if ic.ndim == 1:
+        return ic * d * d
+    return ic * np.outer(d, d)
+
+
 def setup(options):
     fname = options[option_section, "filename"]
     vec = np.load(fname, allow_pickle=False)
+    log_space = bool(options.get_bool(option_section, "log_space",
+                                      default=False))
     config = {"filename": fname,
+              "log_space": log_space,
               "verbose": bool(options.get_bool(option_section, "verbose",
                                                 default=False))}
     for name, expected_n in OBS:
@@ -70,10 +115,17 @@ def setup(options):
             raise ValueError(
                 f"likelihood_cp: invcov_{name} dense has shape {ic.shape}, "
                 f"expected ({expected_n},{expected_n})")
-        config[f"data_{name}"] = d
-        config[f"invcov_{name}"] = ic
+        if log_space:
+            # store ln(data) and the delta-method invcov; both fixed
+            # across the chain (linearized about the data, not theory).
+            config[f"data_{name}"] = np.log(d)
+            config[f"invcov_{name}"] = _to_log_space(d, ic)
+        else:
+            config[f"data_{name}"] = d
+            config[f"invcov_{name}"] = ic
     print(f"[likelihood_cp] loaded mock DV from {fname}: "
-          f"NC={config['data_NC'].size}, Shear={config['data_Shear'].size}")
+          f"NC={config['data_NC'].size}, Shear={config['data_Shear'].size}, "
+          f"log_space={log_space}")
     return config
 
 
@@ -113,19 +165,33 @@ def _shear_theory(block) -> np.ndarray:
     return S1h_avg + Sprj
 
 
+def _residual(data, theory, log_space):
+    """delta = data - theory, in ln-space if requested.
+
+    In log_space, config[data_*] already holds ln(data); take ln of the
+    theory here.  theory is clipped at a tiny floor so a transient
+    non-positive prediction can't blow up the log (it just produces a
+    large finite chi2 that the sampler rejects).
+    """
+    if not log_space:
+        return data - theory
+    return data - np.log(np.maximum(theory, 1e-300))
+
+
 def execute(block, config):
     logL = 0.0
     parts = {}
+    log_space = config["log_space"]
 
     # NumCounts — direct Gaussian on the 12-bin vector.
     NC_theory = np.asarray(block["numcountssel", "vals"]).ravel()
-    delta_NC = config["data_NC"] - NC_theory
+    delta_NC = _residual(config["data_NC"], NC_theory, log_space)
     parts["NC"] = -0.5 * _chi2(delta_NC, config["invcov_NC"])
     logL += parts["NC"]
 
     # Shear — theory = <gamma_t^1h> + gamma_t^prj (length 120).
     Shear_theory = _shear_theory(block)
-    delta_Shear = config["data_Shear"] - Shear_theory
+    delta_Shear = _residual(config["data_Shear"], Shear_theory, log_space)
     parts["Shear"] = -0.5 * _chi2(delta_Shear, config["invcov_Shear"])
     logL += parts["Shear"]
 

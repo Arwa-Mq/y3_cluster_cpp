@@ -66,7 +66,7 @@ _COSMO_PARAM_MAP = {
     "omega_m": "omega_m",
     "omega_b": "omega_b",
     "n_s": "n_s",
-    "log1e10As": "log1e10as",   # CosmoSIS lowercases; be defensive
+    "sigma8": "sigma8",         # s8 emulator: amplitude param is sigma8
     "mnu": "mnu",
 }
 
@@ -184,6 +184,30 @@ def setup(options):
                     os.path.basename(nonlinear_path))
     logger.info("z grid: %.3f..%.3f (%d points)", zmin, zmax, nz)
 
+    # Bound-box for the validator -- the trained range of the linear
+    # emulator (CosmoPower's own parameters_min/max).  At the v3c
+    # widePlanck snapshot this is approximately
+    #   h0 in [0.473, 0.873]
+    #   omega_m in [0.109, 0.896]
+    #   omega_b in [0.016, 0.144]
+    #   n_s in [0.823, 1.103]
+    #   log1e10As in [2.45, 3.65]
+    #   mnu in [0.0, 0.20]
+    # See execute() and _validate_cosmo_box() for the policy: a draw
+    # outside the box returns logL = -inf without invoking the
+    # emulator (and therefore without GSL ever seeing it through the
+    # cluster_toolkit path in halo_model_cosmosis.py).
+    cosmo_bounds = {
+        name: (float(lo), float(hi))
+        for name, lo, hi in zip(linear.parameters,
+                                 linear.parameters_min,
+                                 linear.parameters_max)
+    }
+    logger.info("cosmo bound-box: " + ", ".join(
+        f"{n} in [{lo:.4g}, {hi:.4g}]"
+        for n, (lo, hi) in cosmo_bounds.items()
+    ))
+
     return {
         "linear": linear,
         "nonu": nonu,
@@ -193,7 +217,43 @@ def setup(options):
         "k_modes": linear.modes,
         "write_distances": write_distances,
         "apply_growth": apply_growth,
+        "cosmo_bounds": cosmo_bounds,
     }
+
+
+def _validate_cosmo_box(cosmo_params, config) -> tuple[bool, str]:
+    """Pre-emulator sanity check.  Returns (ok, reason).
+
+    Catches:
+      * Omega_b > Omega_m         (cosmosis consistency module would
+                                   raise ValueError, but the worker
+                                   may already be deep in the pipeline
+                                   when the next module hits GSL)
+      * Any input outside the trained CosmoPower box (parameters_min/
+                                   parameters_max of the linear emulator)
+
+    The bound-box check uses the emulator's own training prior because
+    extrapolation is what produces the unphysical sigma_8 corners that
+    crash cluster_toolkit.peak_height.nu_at_M with a GSL roundoff
+    abort.  A draw that fails the bound-box here would produce a P(k)
+    we don't trust anyway, so dropping it keeps the chain inside the
+    region the emulator was validated for.
+    """
+    om = cosmo_params.get("omega_m")
+    ob = cosmo_params.get("omega_b")
+    if om is not None and ob is not None and ob >= om:
+        return False, f"Omega_b({ob:.4g}) >= Omega_m({om:.4g})"
+
+    bounds = config.get("cosmo_bounds", {})
+    for name, val in cosmo_params.items():
+        if name not in bounds:
+            continue
+        lo, hi = bounds[name]
+        if val < lo or val > hi:
+            return False, (
+                f"{name}={val:.4g} outside trained box [{lo:.4g}, {hi:.4g}]"
+            )
+    return True, ""
 
 
 def _read_cosmo_params(block):
@@ -309,6 +369,20 @@ def _write_distances(block, cosmo_params, z_array):
 
 def execute(block, config):
     cosmo_params = _read_cosmo_params(block)
+
+    # Bound-box validation -- abort BEFORE GSL touches the cosmology.
+    # cluster_toolkit (used by halo_model) calls GSL's qag adaptive
+    # integrator inside nu_at_M; at extreme cosmologies (very small
+    # Omega_m, very large log1e10As, or Omega_b > Omega_m) qag's
+    # roundoff tolerance can't be reached and the default GSL handler
+    # calls abort(), killing the worker process.  Catching at this
+    # layer means the bad sample produces logL = -inf cleanly without
+    # the multiprocessing pool ever invoking GSL.
+    valid, reason = _validate_cosmo_box(cosmo_params, config)
+    if not valid:
+        block[cosmo, "cp_camb_invalid_reason"] = reason
+        return 1     # cosmosis maps non-zero status -> logL = -inf
+
     z = config["z_array"]
     k = config["k_modes"]
 

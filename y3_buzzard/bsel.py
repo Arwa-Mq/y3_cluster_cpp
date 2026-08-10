@@ -344,9 +344,21 @@ def execute(block, config):
     def chi(zx): return np.interp(zx, z_of, chi_of)
 
     # --- MOR scalars (for the marginalisation weight) ----------------------
+    # Accepts either the native (log10_Mmin, log10_M1) form or the
+    # MCMC-friendly (log10_Mmin, log10_ratio) form, where
+    # log10_ratio = log10(M1/Mmin).  Matches MOR_HOD_t in
+    # src/models/mor_hod_t.hh and sel_function._read_mor in
+    # src/modules/sel_function/sel_function.py:494.  log10_ratio wins
+    # if both are present.
+    log10_Mmin = float(block["cluster_mor", "log10_Mmin"])
+    try:
+        log10_ratio = float(block["cluster_mor", "log10_ratio"])
+        log10_M1 = log10_Mmin + log10_ratio
+    except Exception:
+        log10_M1 = float(block["cluster_mor", "log10_M1"])
     mor = dict(
-        log10_Mmin   = float(block["cluster_mor", "log10_Mmin"]),
-        log10_M1     = float(block["cluster_mor", "log10_M1"]),
+        log10_Mmin   = log10_Mmin,
+        log10_M1     = log10_M1,
         alpha        = float(block["cluster_mor", "alpha"]),
         epsilon      = float(block["cluster_mor", "epsilon"]),
         sigma_lambda = float(block["cluster_mor", "sigma_lambda"]),
@@ -459,11 +471,16 @@ def execute(block, config):
             denom     = J[j, i]    # = I2 - I1, computed directly in C++
             dpr       = (lob_i - ltr_nodes) / Delta_RND - 1.0
             b_infty_l = b_eff_ji * (1.0 + 0.13 * dpr)
+            # b_zero closure (paper Eq.~b_LOS_latent).  If J = I2 - I1
+            # collapses, the closed form is genuinely undefined --
+            # surface NaN so the validator flags it instead of silently
+            # rolling b_LOS into b_LSS (which would mask a real
+            # cancellation in a future cosmology).
             b_zero_l  = np.where(
                 np.abs(denom) > 1e-12 * (np.abs(I1[j, i]) + np.abs(I2[j, i])),
                 ((lob_i - ltr_nodes) - P1[j, i]
                  - b_infty_l * I1[j, i]) / denom,
-                b_infty_l,
+                np.nan,
             )
             # Marginalisation weight: HOD prior optionally folded with
             # the EMG P(lob | ltr, zob).

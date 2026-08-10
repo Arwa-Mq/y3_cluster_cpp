@@ -185,3 +185,42 @@ QOS, `--constraint=gpu`, `--account=des_g` for GPU). Specific to this repo:
   re-do the `cudatoolkit/12.2` + `gcc-native/12.3` swaps explicitly inside
   the job script.
 - GPU tests require `--gpus` on both `#SBATCH` and `srun`.
+
+
+### 🔍 MANDATORY SEARCH TOOL: ast-grep (sg)
+**OBLIGATORY RULE**: ALWAYS use `sg` as your PRIMARY tool for ANY code search or pattern matching.
+
+
+    **Basic syntax**:
+    # Syntax-aware search in specific language
+    sg -p '<pattern>' -l <language>
+    
+    # Common languages: python, typescript, javascript, tsx, jsx, rust, go
+    
+    **Common usage patterns**:
+    # Find function definitions
+    sg -p 'def $FUNC($$$)' -l python
+    
+    # Find class declarations
+    sg -p 'class $CLASS' -l python
+    
+    # Find imports
+    sg -p 'import $X from $Y' -l typescript
+    
+    # Find React components
+    sg -p 'function $NAME($$$) { $$$ }' -l tsx
+    
+    # Find async functions
+    sg -p 'async def $NAME($$$)' -l python
+    
+    # Interactive mode (for exploratory searches)
+    sg -p '<pattern>' -l python -r
+    
+    
+    **When to use each tool**:
+    - ✅ **ast-grep (sg)**: 95% of cases - code patterns, function/class searches, syntax structures
+    - ⚠️ **grep**: ONLY for plain text, comments, documentation, or when sg explicitly fails
+    - ❌ **NEVER** use grep for code pattern searches without trying sg first
+    
+    **Enforcement**: If you use `grep -r` for code searching without attempting `sg` first, STOP and retry with ast-grep. This is a CRITICAL requirement.
+   

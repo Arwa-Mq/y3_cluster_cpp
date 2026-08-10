@@ -18,10 +18,24 @@ def setup(options):
         z_bins = int(options[section,"z_bins"])
         zl_array=np.linspace(z_min, z_max, z_bins)
 
-        return z_array, prob_array, zl_array
+        # unity=T: publish sci_average = 1 everywhere so the downstream shear
+        # modules (gamma_t = DSigma * Sigma_crit^-1) emit DeltaSigma directly
+        # instead of tangential shear. Used by the DeltaSigma mock-DV pipeline
+        # so the observable matches the Buzzard jackknife DeltaSigma data.
+        try:
+            unity = bool(options[section, "unity"])
+        except Exception:
+            unity = False
+
+        return z_array, prob_array, zl_array, unity
 
 def execute(block, config):
-        z_vals, prob_vals, zl_array=config
+        z_vals, prob_vals, zl_array, unity=config
+
+        if unity:
+            block["average_sigma_crit_inv", "zlense"]=zl_array
+            block["average_sigma_crit_inv", "sci_average"]=np.ones(len(zl_array))
+            return 0
 
         G=4.51710305e-48 #Mpc^3 / M_sol / s^2
         c=9.71561189e-15 #Mpc/s
