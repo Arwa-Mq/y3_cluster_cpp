@@ -80,6 +80,18 @@ namespace y3_cluster {
     // use rho_mean instead of rho_crit in the rho_s normalisation.
     void set_rho_mult(double m) { _rho_mult = m; }
 
+    // Scale radius r_s(M) [cMpc/h] at fixed concentration/rho_crit
+    // convention, exposed for callers that need it directly (e.g. the
+    // frozen-physics r_s(M)-anchored amplitude drift a_b(z)). Additive-only:
+    // duplicates the same formula operator() computes inline, so any future
+    // change to that formula must be mirrored here.
+    double
+    r_s(double lnM) const
+    {
+      double const r_200 = std::cbrt(3.0 * std::exp(lnM) / (800.0 * M_PI * _rhoc));
+      return r_200 / _c;
+    }
+
     double
     operator()(double r, double rmis, double lnM) const
     {
