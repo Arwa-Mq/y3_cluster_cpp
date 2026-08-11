@@ -67,6 +67,13 @@ modules/survey_area
 
 ```{toctree}
 :maxdepth: 1
+:caption: API reference
+
+api/index
+```
+
+```{toctree}
+:maxdepth: 1
 :caption: Variants and history
 
 variants

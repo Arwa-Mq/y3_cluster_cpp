@@ -43,14 +43,20 @@ $$\Delta\Sigma_{2h}(R) = \bar\Sigma_{2h}(<R) - \Sigma_{2h}(R),
 \qquad \bar\rho_m = \Omega_m\,\rho_{\rm crit},$$
 
 and the **reference combination with the one-halo term is the
-$\Sigma_{\max}/\kappa_{\max}$ ("max") model** — the halo–matter
-correlation is not the sum but the pointwise maximum,
-$\xi_{\rm hm} = \max\!\big(\xi_{\rm 1h},\, b\,\xi_{\rm NL}\big)$
-(Hayashi & White 2008), the prescription of the DES Y1 lensing analysis
+$\Sigma_{\max}/\kappa_{\max}$ ("max") model**: not the sum but the
+pointwise maximum of the one-halo and biased two-halo surface
+densities — the Hayashi & White (2008) prescription of the DES Y1
+lensing analysis
 ([McClintock et al. 2019, MNRAS 482, 1352](https://ui.adsabs.harvard.edu/abs/2019MNRAS.482.1352M/abstract),
-arXiv:[1805.00039](https://arxiv.org/abs/1805.00039)) — applied at the
-$\Sigma$/$\kappa$ level in the profile assembly. The stacked variant
-uses the population-averaged bias
+arXiv:[1805.00039](https://arxiv.org/abs/1805.00039)). In this repo it
+is implemented at the $\Sigma$/$\Delta\Sigma$ level by
+[`src/models/kappa_max.hh`](https://github.com/estevesjh/y3_cluster_cpp/blob/d7feb7504ed5dfcad84f99a1791af8a55c858aa0/src/models/kappa_max.hh)
+(`KAPPA_MAX`:
+$\kappa = \max\!\big(\Sigma_{\rm NFW},\, b\,\Sigma_{\rm hh}\big)\,
+\Sigma_{\rm crit}^{-1}$, from the `haloModel` tables) and
+[`src/models/gamma_max.hh`](https://github.com/estevesjh/y3_cluster_cpp/blob/d7feb7504ed5dfcad84f99a1791af8a55c858aa0/src/models/gamma_max.hh)
+(`GAMMA_MAX`, the $\Delta\Sigma$ twin). The stacked variant uses the
+population-averaged bias
 $\langle b\rangle_i = N_i[b]/N_i[1]$ from the `BiasWeightedSel`
 diagnostic module ({doc}`../variants`).
 
