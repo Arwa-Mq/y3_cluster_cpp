@@ -31,18 +31,15 @@ $$N_i[f] = \int d\ln M \int dz\;
 \Omega(z)\,\frac{dV}{d\Omega\,dz}\,\frac{dn}{d\ln M}(M,z)\,
 S_{ij}(\ln M, z)\, f(\ln M, z),$$
 
-with $\Omega(z)$ the survey area ({doc}`../selection/survey_area`).
-Evaluation is fixed Gauss–Legendre: once per sample the $z$ axis is
-contracted into per-bin mass weights
-
-$$W_{ij}(\ln M_k) = \sum_q w_q\, \frac{dV}{d\Omega\,dz}(z_q)\,\Omega(z_q)\,
-n(M_k, z_q)\, S_{ij}(\ln M_k, z_q),$$
-
-then each count is a 1-D GL sum over $\ln M$. Deterministic 0.02 s per
-sample vs the retired per-bin adaptive Cuhre path (mean 0.11 s, tail
-1 s). Grid-convergence error $< 0.05\%$ (192 vs 256 `sel_function`
-nodes). Derivation: {doc}`../science/index`; quadrature details:
-{doc}`../numerics/index`.
+with $\Omega(z)$ the survey area ({doc}`../selection/survey_area`) and
+$S_{ij}$ the tabulated selection function
+({doc}`../selection/sel_function`). Evaluation is fixed Gauss–Legendre:
+the $z$ axis is contracted once per sample into per-bin mass weights,
+and each count is one 1-D mass sum — deterministic 0.02 s per sample vs
+the retired adaptive Cuhre path (mean 0.11 s, tail 1 s),
+grid-convergence error $< 0.05\%$. **The complete step-by-step recipe
+lives in {doc}`../numerics/index`, §"The number-counts and one-halo
+lensing recipe, step by step".** Derivation: {doc}`../science/index`.
 
 ## CosmoSIS setup
 

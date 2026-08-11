@@ -44,24 +44,26 @@ $$\gamma_t^{1h,\rm full}(R; M, z) =
 + f_{\rm mis}\,\Delta\Sigma_{\rm mis}\big(R, M;\, \tau_{\rm mis} R_\lambda\big)\Big]\,
 \langle\Sigma_{\rm crit}^{-1}\rangle(z),$$
 
-with $R_\lambda = (\lambda/100)^{0.2}\,h^{-1}$Mpc resolved per richness
-bin (`bin_index % 4`). This is **target-cluster miscentering** — the
-assigned redMaPPer centre offset from the true halo centre, with
-$(f_{\rm mis}, \tau_{\rm mis})$ as nuisance parameters — distinct from
-the parameter-free neighbouring-halo offset inside the two-halo term
-({doc}`shear_projection`). The profile is $z$-free, so the $z$-marginalised
-weight $W_{ij}(\ln M)$ — including the $\Sigma_{\rm crit}^{-1}$ factor —
-is built once per sample; each of the 180 grid points is one 1-D GL mass
-sum ($\sim 16\times$ faster than the retired per-(bin, $R$) Cuhre path,
-deterministic cost). Both mixture pieces are linear in $\Delta\Sigma$, so
-the one-halo + projection sum in the likelihood is exact (tangential
-shear, not reduced shear — see {doc}`../systematics/index`).
+with $R_\lambda = (\lambda/100)^{0.2}\,h^{-1}$Mpc per richness bin.
+This is **target-cluster miscentering** — the assigned redMaPPer centre
+offset from the true halo centre, with $(f_{\rm mis}, \tau_{\rm mis})$
+as nuisance parameters — distinct from the parameter-free
+neighbouring-halo offset inside the two-halo term
+({doc}`shear_projection`). Both mixture pieces are linear in
+$\Delta\Sigma$, so the one-halo + projection sum in the likelihood is
+exact (tangential shear, not reduced shear —
+{doc}`../systematics/index`).
+
+Evaluation is fixed Gauss–Legendre with the redshift axis contracted
+once per sample into mass weights $W_{ij}(\ln M)$; each of the 180 wall
+points is then one 1-D mass sum ($\sim 16\times$ faster than the
+retired per-(bin, $R$) Cuhre path, deterministic cost). **The complete
+step-by-step recipe lives in {doc}`../numerics/index`,
+§"The number-counts and one-halo lensing recipe, step by step".**
 
 Setting `miscentering/f_mis = 0` recovers the centred-only `Shear1hSel`
-result ({doc}`../variants`). Radial-factorisation error budget:
-[shear1h_radial_factorization.tex](https://github.com/estevesjh/y3_cluster_cpp/blob/master/docs/shear1h_radial_factorization.tex).
-Model derivation: {doc}`../science/index`; miscentering model:
-{doc}`../systematics/index`.
+result ({doc}`../variants`). Model derivation: {doc}`../science/index`;
+miscentering model: {doc}`../systematics/index`.
 
 ## CosmoSIS setup
 

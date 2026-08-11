@@ -128,6 +128,78 @@ $\sigma(\theta) \to 1$).
 §red_shear_prj, §Timing & precision optimisation audit (node counts from
 the reference ini).*
 
+## The number-counts and one-halo lensing recipe, step by step
+
+The full numerical recipe of the two population-operator modules
+(`NumCountsSel`, {doc}`../observables/number_counts`, and
+`Shear1hMisSel`, {doc}`../observables/shear_halo`), which share one
+engine (`SelGLCore` in `src/models/n_operator_sel_gl_t.hh`). The target:
+
+$$N_i[f] = \int d\ln M \int dz\;
+\Omega(z)\,\frac{dV}{d\Omega\,dz}\,\frac{dn}{d\ln M}(M,z)\,
+S_{ij}(\ln M, z)\, f(R; \ln M),$$
+
+with $f = 1$ for the counts and $f = \gamma_t^{1h,\rm full}$ (the
+centred + miscentred profile) for the one-halo lensing.
+
+**Step 0 — once per module construction** (`Shear1hMisSel` only). Load
+the gamma-kernel (target-cluster) miscentred-NFW tables from
+`data/nfw_off_center/*gamma*`: $1000 \times 1000$ log-log grids of
+$\Delta\Sigma_{\rm mis}$ in $(R/r_s, R_{\rm mis}/r_s)$, fixed $c = 4$,
+$\bar\rho_m$ normalisation set from `omega_m` each sample.
+
+**Step 1 — once per MCMC sample.** Read the inputs: the packed selection
+tensor `sel_function/S_stack` ($S_{ij}$ per bin, served via `Interp2D`),
+the HMF through `HMF_t` (which applies the $\Omega_m - \Omega_\nu$
+mass-axis shift and the $(s, q)$ nuisance scaling), the volume element
+through `DV_DO_DZ_t`, the hard-coded survey area $\Omega(z)$
+({doc}`../selection/survey_area`) — and, for the lensing module only,
+$\langle\Sigma_{\rm crit}^{-1}\rangle(z)$ and the centred NFW
+$\Delta\Sigma_{\rm NFW}$ spline from `haloModel`, plus
+$(f_{\rm mis}, \tau_{\rm mis})$ (defaults 0.22, 0.17).
+
+**Step 2 — contract the redshift axis** (the core trick). None of the
+lensing profile depends on $z$ (the geometry factor
+$\langle\Sigma_{\rm crit}^{-1}\rangle(z)$ folds into the weight), so the
+$z$ integral is done once per sample per bin, on `n_z` (= 64) fixed GL
+nodes:
+
+$$W_{ij}(\ln M_k) = \sum_q w_q\, \Omega(z_q)\,
+\frac{dV}{d\Omega\,dz}(z_q)\, n(M_k, z_q)\, S_{ij}(\ln M_k, z_q)\,
+\Big[\langle\Sigma_{\rm crit}^{-1}\rangle(z_q)\Big]_{\rm lensing\ only},$$
+
+for all 12 bins on the `n_lnm` (= 96) mass nodes.
+
+**Step 3 — counts.** Each count is one 1-D GL sum:
+$N_i[1] = \sum_k w_k\, W_{ij}(\ln M_k)$. Twelve dot products total.
+
+**Step 4 — one-halo lensing.** The profile is $z$-free by construction:
+
+$$\Phi_i(R, \ln M) = (1 - f_{\rm mis})\,\Delta\Sigma_{\rm NFW}(R, \ln M)
++ f_{\rm mis}\,\Delta\Sigma_{\rm mis}\big(R;\, \tau_{\rm mis}
+R_\lambda(\lambda_i),\, \ln M\big),$$
+
+with the richness bin resolved as `bin_index % 4` (each bin's own
+$R_\lambda$ — the retired weight silently reused bin 3's for bins 4–11,
+a $\sim 2\%$ effect). Each of the 180 wall points is then a single 1-D
+GL mass sum $\sum_k w_k\, W_{ij}(\ln M_k)\, \Phi_i(R, \ln M_k)$: the
+$z$-contracted weights are shared across all 15 radii of a bin. An
+optional `method = idea2` replaces the full mass sum by a second-order
+moment expansion around the effective mass (stencil `stencil_h`);
+production uses `exact`.
+
+**Cost and accuracy.** Deterministic per-sample cost: counts 0.021 s
+(vs the retired per-bin Cuhre's 0.107 s mean / 0.98 s tail), lensing
+$\sim 16\times$ faster than the per-(bin, $R$) Cuhre path (0.575 s
+mean / 4.0 s tail) over $\sim 10^6$ MCMC realisations. Grid error is
+bounded by the `sel_function` sweep below ($< 0.05\%$ at
+$n_{\ln M} = 192$ vs 256); the radial-factorisation error budget of the
+lensing weight is in
+[shear1h_radial_factorization.tex](https://github.com/estevesjh/y3_cluster_cpp/blob/master/docs/shear1h_radial_factorization.tex).
+Setting `miscentering/f_mis = 0` reproduces the centred-only
+`Shear1hSel` — the closure check used when the miscentering branch
+landed.
+
 ## The shear-projection recipe, step by step
 
 The full numerical recipe of the projection stage
