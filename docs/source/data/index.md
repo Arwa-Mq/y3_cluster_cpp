@@ -18,7 +18,7 @@ Only a handful of files are opened at runtime by
 | `data/nfw_off_center/table_1000_…_single_*.txt` | single-offset (δ-kernel) $\Sigma_{\rm mis}$/$\Delta\Sigma_{\rm mis}$ lookups | `shear_prj` | precomputed convolution tables |
 | `y3_buzzard/prj_params.py` (embedded table) | calibrated EMG projection coefficients (8 coefficients × 15-node z grid, 0.10–0.80) | `sel_function`, `bsel` | Costanzi-2026 calibration (the on-disk `data/prj_params/` is empty — the table lives in code) |
 | bin definitions (λ edges 20/30/45/60/200; z edges 0.20/0.35/0.50/0.65; 10 radii) | ini vectors | all wall-grid modules | analysis choice |
-| miscentering $(f_{\rm mis}, \tau_{\rm mis})$ | DataBlock `miscentering` section or in-code defaults (0.22, 0.17) | `Shear1hMisSel` | DES-Y3 redMaPPer calibration (Kelly et al. 2023) |
+| miscentering $(f_{\rm mis}, \tau_{\rm mis})$ | DataBlock `miscentering` section or in-code defaults (0.22, 0.17) | `Shear1hMisSel` | DES Y3 redMaPPer miscentring calibration ([Kelly et al. 2024, MNRAS 533, 572](https://ui.adsabs.harvard.edu/abs/2024MNRAS.533..572K/abstract), arXiv:2310.13207; updating [Zhang et al. 2019, MNRAS 487, 2578](https://ui.adsabs.harvard.edu/abs/2019MNRAS.487.2578Z/abstract)) |
 
 ```{todo}
 Add Units and "generated how" columns for the pipeline inputs, and

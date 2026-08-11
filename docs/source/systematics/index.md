@@ -5,9 +5,14 @@
 Miscentering enters the model in two distinct places:
 
 - miscentering of the **lensing profile** — the reference one-halo branch
-  `Shear1hMisSel` uses the DES-Y3 redMaPPer offset model (Kelly et al.
-  2023 gamma kernel), mixing centered and miscentered profiles with
-  $(f_{\rm mis}, \tau_{\rm mis})$ read from the `miscentering` DataBlock
+  `Shear1hMisSel` uses the DES Y3 redMaPPer offset calibration of
+  [Kelly et al. 2024, MNRAS 533, 572](https://ui.adsabs.harvard.edu/abs/2024MNRAS.533..572K/abstract)
+  (arXiv:[2310.13207](https://arxiv.org/abs/2310.13207); the Gamma offset
+  kernel, updating the DES Y1 calibration of
+  [Zhang et al. 2019, MNRAS 487, 2578](https://ui.adsabs.harvard.edu/abs/2019MNRAS.487.2578Z/abstract),
+  arXiv:[1901.07119](https://arxiv.org/abs/1901.07119)), mixing centered
+  and miscentered profiles with $(f_{\rm mis}, \tau_{\rm mis})$ read from
+  the `miscentering` DataBlock
   section (defaults $f_{\rm mis}=0.22$, $\tau_{\rm mis}=0.17$). The full
   model — offset kernels, azimuthal convolution, and the precomputed
   lookup tables — is documented in

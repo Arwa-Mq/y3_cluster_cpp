@@ -140,7 +140,12 @@ Two offset kernels are supported (selected by the `kernel` string in
   \delta_D(R_{\rm mis} - \tau_{\rm mis} R_\lambda)$. Used by the
   projection branch (`shear_prj`), because it factors cleanly into the
   $\theta = R_{\rm mis}/D_A(z^{\rm ob})$ angular integral.
-- **gamma** — the Kelly et al. 2023 / Costanzi-2026 fit,
+- **gamma** — the DES Y3 redMaPPer miscentring calibration
+  ([Kelly et al. 2024, MNRAS 533, 572](https://ui.adsabs.harvard.edu/abs/2024MNRAS.533..572K/abstract),
+  arXiv:[2310.13207](https://arxiv.org/abs/2310.13207) — the updated
+  analysis of
+  [Zhang et al. 2019, MNRAS 487, 2578](https://ui.adsabs.harvard.edu/abs/2019MNRAS.487.2578Z/abstract))
+  as used by Costanzi-2026,
 
   $$
   P_\gamma(R_{\rm mis}\,|\,\tau_{\rm mis}, R_\lambda)

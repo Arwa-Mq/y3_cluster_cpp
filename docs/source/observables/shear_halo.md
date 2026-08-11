@@ -85,8 +85,13 @@ treatment follow
 [DES Cluster et al. 2023](https://ui.adsabs.harvard.edu/abs/2023arXiv230906593A/abstract)
 (arXiv:[2309.06593](https://arxiv.org/abs/2309.06593)), the reference
 paper for this software suite. This module evaluates it with the
-miscentering-mixture shear weight (DES-Y3 redMaPPer calibration,
-Kelly et al. 2023 gamma offset kernel):
+miscentering-mixture shear weight, using the DES Y3 redMaPPer
+miscentring calibration of
+[Kelly et al. 2024, MNRAS 533, 572](https://ui.adsabs.harvard.edu/abs/2024MNRAS.533..572K/abstract)
+(arXiv:[2310.13207](https://arxiv.org/abs/2310.13207)) — the Gamma
+offset kernel, an updated analysis of the DES Y1 calibration of
+[Zhang et al. 2019, MNRAS 487, 2578](https://ui.adsabs.harvard.edu/abs/2019MNRAS.487.2578Z/abstract)
+(arXiv:[1901.07119](https://arxiv.org/abs/1901.07119)):
 
 $$\gamma_t^{1h,\rm full}(R; M, z) =
 \Big[(1 - f_{\rm mis})\,\Delta\Sigma_{\rm NFW}(R, M)
