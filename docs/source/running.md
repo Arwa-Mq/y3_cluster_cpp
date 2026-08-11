@@ -37,27 +37,18 @@ likelihoods = likelihoods
 | 12 | {doc}`shear_prj_frozen_physics <observables/shear_projection>` | projection shear $\gamma_t^{\rm prj}(R)$ | C++ · `y3_cluster_cpp` |
 | 13 | {doc}`likelihoods <observables/likelihood>` | Gaussian $\log L$ | Python · `y3_cluster_cpp` |
 
-Data flow:
+Data flow (edge labels are the DataBlock sections passed between
+modules; blue = cosmology quantities, orange = selection effects,
+green = cluster observables, grey = likelihood):
 
-```text
-consistency ──> GrowthFactor ──> cp_camb ──> MfTinker ──> halo_model
-                                   │             │            │
-                     distances     │      mass_function   bias, xi_nl, NFW
-                                   v             v            v
-              average_sigma_crit_inv      sel_function ──> S_stack
-                        │                        │
-                        v                        v
-                 <Sigma_crit^-1>   NumCountsSel      Shear1hMisSel
-                        │             N_i[1]        N_i[gamma_1h](R)
-                        │                │                │
-                        v                │                │
-        b_sel_marg ──> bsel              │                │
-        (P1, I1, J)   (B_small, B_large) │                │
-                        │                │                │
-                        v                v                v
-          shear_prj_frozen_physics ──────────────> likelihoods
-               gamma_prj(R)          theory = N_i,  N_i[γ]/N_i + γ_prj
+```{image} _static/img/pipeline_dataflow.png
+:alt: Data flow of the mock_mcmc_buzzard.ini reference pipeline
+:width: 100%
 ```
+
+(Source: `docs/figs/pipeline_dataflow.mmd`; regenerate the PNG with
+`npx -y @mermaid-js/mermaid-cli -i docs/figs/pipeline_dataflow.mmd -o
+docs/source/_static/img/pipeline_dataflow.png -b white -s 2`.)
 
 ## Required repositories and environment
 
