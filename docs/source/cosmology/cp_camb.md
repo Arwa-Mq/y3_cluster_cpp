@@ -104,3 +104,11 @@ nz = 50
 | `distances/{z, a, d_a, d_m, d_l, d_c, h, mu, nz}` | astropy background distances; Mpc (CAMB convention, no $h$); `d_c = d_m` (flat); `h = H(z)/c` in Mpc⁻¹ | `(50,)` each | `average_sigma_crit_inv`, `NumCountsSel`, `Shear1hMisSel`, `b_sel_marg`, `bsel`, `shear_prj_frozen_physics` |
 | `cosmological_parameters/cp_camb_invalid_reason` | rejection reason string (only on rejected draws, with module status 1 → $\log L = -\infty$) | — | diagnostics |
 
+
+```{todo}
+**Non-linear power spectrum not yet emulated.** The module supports a
+`nonlinear_pk_path` emulator, but none is trained: `matter_power_nl` is
+not published in the reference run, and `halo_model` falls back to the
+linear spectrum for $\xi_{\rm NL}$. A halofit-level non-linear emulator
+still needs to be trained in `camb-emulator` and wired in here.
+```
