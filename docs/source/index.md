@@ -80,6 +80,11 @@ CosmoSIS/CUBA software framework — is
 [DES Cluster et al. 2023](https://ui.adsabs.harvard.edu/abs/2023arXiv230906593A/abstract)
 (arXiv:[2309.06593](https://arxiv.org/abs/2309.06593)).
 
+The optical selection-bias and projection-lensing model layered on it
+(the `sel_function` / `b_sel_marg` / `bsel` / projection-shear branch)
+is [Costanzi et al. 2026, PhRvD 113, 103508](https://ui.adsabs.harvard.edu/abs/2026PhRvD.113j3508C/abstract)
+(arXiv:[2604.05833](https://arxiv.org/abs/2604.05833)).
+
 ## Archival documents
 
 The LaTeX documents below are the archival, paper-grade record from which

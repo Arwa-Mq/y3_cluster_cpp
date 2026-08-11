@@ -6,7 +6,10 @@ three $P[X]$ population operators, and the Python `bsel` closes them into
 the two bias plateaus $(B_{\rm small}, B_{\rm large})$ that
 `shear_prj_frozen_physics` consumes.
 
-Model background: {doc}`../systematics/index` (optical selection bias).
+The model is
+[Costanzi et al. 2026, PhRvD 113, 103508](https://ui.adsabs.harvard.edu/abs/2026PhRvD.113j3508C/abstract)
+(arXiv:[2604.05833](https://arxiv.org/abs/2604.05833)); derivations in
+{doc}`../systematics/index` (optical selection bias).
 
 ---
 

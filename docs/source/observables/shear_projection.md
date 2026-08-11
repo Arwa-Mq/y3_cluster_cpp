@@ -114,7 +114,13 @@ selection kernels — is that of
 [DES Cluster et al. 2023](https://ui.adsabs.harvard.edu/abs/2023arXiv230906593A/abstract)
 (arXiv:[2309.06593](https://arxiv.org/abs/2309.06593)), the reference
 paper for this software suite; the projection-selection extension
-documented here is the Costanzi-2026 model built on top of it.
+documented here is the model of
+[Costanzi et al. 2026, PhRvD 113, 103508](https://ui.adsabs.harvard.edu/abs/2026PhRvD.113j3508C/abstract)
+(arXiv:[2604.05833](https://arxiv.org/abs/2604.05833)) built on top of
+it: a scale-dependent parametrization of the optical cluster bias whose
+small- and large-scale plateaus are set by the amplitude of projection
+effects, with the two-halo profile expressed through off-axis
+line-of-sight haloes.
 
 Per $(\lambda^{\rm ob}, z^{\rm ob}, R)$ wall point, the projected surface
 density of line-of-sight structure:

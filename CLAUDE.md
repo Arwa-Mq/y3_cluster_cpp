@@ -49,12 +49,15 @@ Johnny Esteves with Marc Paterno and Jim Annis:
   (`n_operator_sel_gl_t.hh`, `SelGLCore`) that replaced the per-bin
   adaptive Cuhre integrals.
 
-On the physics side, the Costanzi et al. (2026) model extends the
-backbone with the optical selection-bias and projection-lensing
-treatment — the "Costanzi-2026 path" referenced throughout this file and
-the docs: the shifted-Poisson HOD + EMG richness kernels behind the
-`sel_function` tabulation, the P[X] operators (`b_sel_marg` → `bsel`),
-and the Sigma_prj/DSigma_prj/shear_prj projection branch.
+On the physics side, the Costanzi et al. (2026) model — "Forward
+analytical model for the optical selection bias on galaxy cluster
+lensing profiles", PhRvD 113, 103508; arXiv:2604.05833 (ADS
+`2026PhRvD.113j3508C`) — extends the backbone with the optical
+selection-bias and projection-lensing treatment, the "Costanzi-2026
+path" referenced throughout this file and the docs: the shifted-Poisson
+HOD + EMG richness kernels behind the `sel_function` tabulation, the
+P[X] operators (`b_sel_marg` → `bsel`), and the
+Sigma_prj/DSigma_prj/shear_prj projection branch.
 
 ## Build
 
