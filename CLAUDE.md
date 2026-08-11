@@ -29,6 +29,25 @@ CosmoSIS `.ini` pipelines that drive these modules live in sibling repos
 under `cosmosis-models/` or `y3_buzzard/` here is local/scratch and not
 canonical — don't treat it as authoritative.
 
+## Code history
+
+The backbone of this pipeline is entirely described in the DES
+cluster-cosmology software paper, arXiv:2309.06593 (ADS
+`2023arXiv230906593A`) — the original CosmoSIS/C++/CUBA suite for cluster
+number counts and population-averaged lensing, validated on DES Y1. That
+paper is the reference pipeline. **Cite it as "DES Cluster et al.
+(2023)"**, the collaboration form — never by ADS first author.
+
+Everything since is layered on that backbone, mostly as speed-ups, by
+Johnny Esteves with Marc Paterno and Jim Annis:
+
+- the GPU/CUDA ports (PAGANI backends, `.cuh` device models);
+- the header-only struct/template format of the model classes
+  (`src/models/*.hh`, the `Models<...>` typelist, module macros);
+- the fast mass integrations — the fixed Gauss–Legendre evaluators
+  (`n_operator_sel_gl_t.hh`, `SelGLCore`) that replaced the per-bin
+  adaptive Cuhre integrals.
+
 ## Build
 
 The project **only builds on Perlmutter GPU compute nodes with a specific non-default
