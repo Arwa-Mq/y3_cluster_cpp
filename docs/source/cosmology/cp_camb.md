@@ -9,13 +9,24 @@ emulator forward pass per sample.
 
 ## Script
 
-- Source: [`src/modules/cp_camb/cp_camb.py`](https://github.com/estevesjh/y3_cluster_cpp/blob/d7feb7504ed5dfcad84f99a1791af8a55c858aa0/src/modules/cp_camb/cp_camb.py)
-  (`y3_cluster_cpp` @ `d7feb75`).
-- Trained emulator artifacts (`.npz`) live in the external
-  [camb-emulator](https://github.com/estevesjh/camb-emulator) repository
-  (`camb-for-cp/models/`); the runtime NN evaluator `cp_numpy` is
-  imported from `emulator_repo`.
-- Loaded by CosmoSIS as a Python module.
+- CosmoSIS interface: [`src/modules/cp_camb/cp_camb.py`](https://github.com/estevesjh/y3_cluster_cpp/blob/d7feb7504ed5dfcad84f99a1791af8a55c858aa0/src/modules/cp_camb/cp_camb.py)
+  (`y3_cluster_cpp` @ `d7feb75`), loaded by CosmoSIS as a Python module.
+- **The emulator code itself lives in the external
+  [estevesjh/camb-emulator](https://github.com/estevesjh/camb-emulator)
+  repository** (active pipeline under
+  [`camb-for-cp/`](https://github.com/estevesjh/camb-emulator/tree/42f20382e619161b214add3961ce5c7a325b4401/camb-for-cp)
+  @ `42f2038`):
+  - [`cp_numpy.py`](https://github.com/estevesjh/camb-emulator/blob/42f20382e619161b214add3961ce5c7a325b4401/camb-for-cp/cp_numpy.py)
+    — the numpy-only inference wrapper `cp_camb.py` imports at runtime
+    (no TensorFlow dependency inside CosmoSIS);
+  - `models/` — the trained CosmoPower artifacts (`.pkl` + exported
+    `.npz`, produced by
+    [`export_cosmopower_numpy.py`](https://github.com/estevesjh/camb-emulator/blob/42f20382e619161b214add3961ce5c7a325b4401/camb-for-cp/export_cosmopower_numpy.py));
+  - `configs/`, `scripts/`, `slurm/` — the CAMB training-set generation
+    (Latin-hypercube sampling, CAMB runs, cleaning) and GPU training;
+  - [`PIPELINE.md`](https://github.com/estevesjh/camb-emulator/blob/42f20382e619161b214add3961ce5c7a325b4401/camb-for-cp/PIPELINE.md)
+    — the step-by-step instructions to run CAMB and retrain the
+    emulators on Perlmutter, end to end.
 
 ## Numerical framework
 
@@ -34,8 +45,16 @@ growth-broadcast, `put_grid`. All loaded emulators are checked at setup
 to share one $k$ grid. The reference values file fixes `mnu = 0` because
 the $D(z)^2$ rescaling assumes scale-independent growth.
 
-Emulator-vs-CAMB validation (residuals on downstream number counts):
-[emulator_validation.tex](https://github.com/estevesjh/y3_cluster_cpp/blob/master/docs/emulator_validation.tex).
+Two independent networks per artifact generation: total-matter
+$P^{\rm mm}(k)$ (→ `matter_power_lin`) and CDM+baryon $P^{\rm cb}(k)$
+(→ `cdm_baryon_power_lin` for `MfTinker`). Emulator-vs-CAMB accuracy on
+the held-out test set (~20k cosmologies × 506 $k$-modes, v2c numbers
+from the repo README; the reference run loads the v3c artifacts):
+median $|P_{\rm pred}/P_{\rm true} - 1| \approx 0.07\%$, 99th
+percentile $\lesssim 1.5\%$, on both networks. Downstream validation —
+residuals propagated to the number counts —
+in [emulator_validation.tex](https://github.com/estevesjh/y3_cluster_cpp/blob/master/docs/emulator_validation.tex)
+and `camb-for-cp/hmf_report/`.
 
 ## CosmoSIS setup
 
