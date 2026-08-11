@@ -48,6 +48,13 @@ Johnny Esteves with Marc Paterno and Jim Annis:
   (`n_operator_sel_gl_t.hh`, `SelGLCore`) that replaced the per-bin
   adaptive Cuhre integrals.
 
+On the physics side, the Costanzi et al. (2026) model extends the
+backbone with the optical selection-bias and projection-lensing
+treatment — the "Costanzi-2026 path" referenced throughout this file and
+the docs: the shifted-Poisson HOD + EMG richness kernels behind the
+`sel_function` tabulation, the P[X] operators (`b_sel_marg` → `bsel`),
+and the Sigma_prj/DSigma_prj/shear_prj projection branch.
+
 ## Build
 
 The project **only builds on Perlmutter GPU compute nodes with a specific non-default
