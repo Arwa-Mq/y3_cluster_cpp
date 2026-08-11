@@ -128,6 +128,135 @@ $\sigma(\theta) \to 1$).
 §red_shear_prj, §Timing & precision optimisation audit (node counts from
 the reference ini).*
 
+## The shear-projection recipe, step by step
+
+The full numerical recipe of the projection stage
+(`shear_prj_frozen_physics`, {doc}`../observables/shear_projection`).
+The target, per $(\lambda^{\rm ob}, z^{\rm ob}, R)$ wall point:
+
+$$\Delta\Sigma^{\rm prj}(R) = \int dz\, d\ln M\, d\theta\;
+w_z(z, z^{\rm ob})\, \frac{dV}{d\Omega\,dz}\, n(M, z)\,
+\big[\underbrace{1}_{\rm rnd} + \underbrace{b(M,z)\, b_{\rm sel}(\theta)\,
+\xi_{\rm NL}(|\Delta\chi|, z^{\rm ob})}_{\rm cl}\big]\,
+\Delta\Sigma_{\rm mis}\big(R \mid M,\, \theta D_A(z^{\rm ob})\big)\,
+\mathbb{1}\big[\theta > \theta_{\rm excl}(z)\big],$$
+
+then $\gamma_t^{\rm prj}(R) = \Delta\Sigma^{\rm prj}(R)\,
+\langle\Sigma_{\rm crit}^{-1}\rangle(z^{\rm ob})$. Everything is fixed
+grids and dot products — no adaptive integrator anywhere.
+
+**Step 0 — once per module construction.** Load the single-offset
+(neighbouring-halo) miscentred-NFW lookup tables from
+`data/nfw_off_center/*single*`: $1000 \times 1000$ log-log grids of
+$\Delta\Sigma_{\rm mis}$ in $(R/r_s,\, R_{\rm mis}/r_s)$, with fixed
+concentration $c = 4$ and mean-density normalisation ($\bar\rho_m$ set
+from `omega_m` each sample). $r_s(M) =
+\big[3 e^{\ln M} / (800\pi \rho_c)\big]^{1/3} / c$.
+
+**Step 1 — once per MCMC sample** (`set_sample`). Read the DataBlock
+inputs and build reference caches: HMF $n(M, z)$ (through `HMF_t`, which
+applies the $\Omega_m - \Omega_\nu$ mass-axis shift), halo bias
+$b(M, z)$ and $\xi_{\rm NL}(r, z)$ as 2-D interpolants, $\chi(z)$ and
+$D_A(z)$ from `distances` ($\chi \times h_0$ → cMpc/$h$), the
+$(B_{\rm small}, B_{\rm large})$ plateau tables from
+`b_sel_marginalised`, and $\langle\Sigma_{\rm crit}^{-1}\rangle(z)$
+(if absent, all $\gamma_t$ outputs are zero).
+
+**Step 2 — group the wall into slices.** The 180 wall points share 12
+unique $(\lambda^{\rm ob}, z^{\rm ob})$ slices × 15 radii; all grids
+below are built once per slice and reused for every $R$ on it.
+
+**Step 3 — the $\theta$ grid** (the outer axis). Collect the sorted,
+deduplicated breakpoints
+
+$$\{\theta_{\rm lo},\ \theta_{\rm excl,o},\ \theta_R(R_k) = R_k / D_A
+\ \forall R_k \text{ on the slice},\ \theta_\lambda,\ 2\theta_\lambda,\
+\theta_{\max}\},$$
+
+with $\theta_\lambda = R_\lambda(\lambda^{\rm ob})(1 + z^{\rm ob}) /
+\chi(z^{\rm ob})$, $\theta_{\max} = \max(R_{\max}/D_A,\, 3\max_k
+\theta_R)$, and $\theta_{\rm lo} = \max(10^{-8},\, 0.1 \min(\theta_{\rm
+excl,o}, \theta_{R,\min}, \theta_\lambda))$. Lay `n_per_seg` (= 10)
+log-GL nodes on each segment, folding the $d\theta = \theta\, d\ln\theta$
+Jacobian into the weight. Each breakpoint pins a real integrand feature:
+the exclusion step, the $\Sigma_{\rm mis}$ peak at each $\theta_R(R_k)$,
+and the $b_{\rm sel}$ sigmoid transition at $\theta_\lambda/2$. Cache
+$\sin\theta$ and $b_{\rm sel}(\theta)$ per node.
+
+**Step 4 — the $z$ grid** (line of sight). Three pieces, clipped to
+$[z_{\rm t,low}, z_{\rm t,high}]$:
+
+- a **ring** of `n_zring` (= 20) GL nodes on the band
+  $[z^{\rm ob} - \Delta z, z^{\rm ob} + \Delta z]$, endpoints found by
+  bisection of $z \pm \sigma_z(z) = z^{\rm ob}$ (photo-$z$ width
+  $\sigma_z(z)$ from the compiled table `src/models/z_kernel_data.hh`);
+- a **foreground wing** and a **background wing** of `n_zouter` (= 20)
+  nodes each, GL in $u = \ln|\Delta\chi_\parallel|$ with the
+  $du \to dz$ Jacobian — log spacing resolves the $\xi_{\rm NL}$ cusp
+  at small line-of-sight separation.
+
+Per node, the common weight is $w_z^{\rm GL} \cdot w_z(z, z^{\rm ob})
+\cdot dV/d\Omega dz$, with the parabolic photo-$z$ kernel
+$w_z = \max(0, 1 - u^2)$, $u = (z - z^{\rm ob})/\sigma_z$ (times
+$\Omega(z)$ only if `include_omega_z = 1` — off in the reference run,
+{doc}`../selection/survey_area`).
+
+**Step 5 — the exclusion mask.** Per $z$ node, remove angles inside the
+redMaPPer slab: keep $\theta > \theta_{\rm excl}(z)$, with
+$\cos\theta_{\rm excl} = (\chi_z^2 + \chi_o^2 - R_{\rm excl}^2) /
+(2\chi_z\chi_o)$ and $R_{\rm excl} = R_\lambda(\lambda^{\rm ob})
+(1 + z^{\rm ob})$.
+
+**Step 6 — the mass grid.** `n_lnm` (= 16) fixed GL nodes on
+$[\mathtt{lnm\_low}, \mathtt{lnm\_high}]$.
+
+**Step 7 — contract the channels.** This is the frozen-physics
+reduction:
+
+- *Random channel (exact).* Nothing under the $z$ sum depends on
+  $\theta$ jointly with $M$, so hoist it exactly:
+  $a_n(M) = \sum_z w_z^{\rm common}\, n(M, z)$ once per slice; the
+  channel is then $\mathrm{rnd}(R, \theta) = \sum_M w_M\, a_n(M)\,
+  \Delta\Sigma_{\rm mis}(R \mid M, \theta D_A)$.
+- *Clustered channel (frozen).* The exact channel needs
+  $n(M,z)\,b(M,z)$ resolved in $z$ under the $\theta$ sum. Freeze the
+  mass dependence at $z^{\rm ob}$,
+  $w^{\rm cl}_M = w_M\, n(M, z^{\rm ob})\, b(M, z^{\rm ob})$, and carry
+  the redshift drift through a scalar amplitude anchored on $r_s(M)$:
+
+  $$a_b(z) = \frac{\sum_M r_s(M)\, w_M\, n(M, z)\, b(M, z)}
+  {\sum_M r_s(M)\, w_M\, n(M, z^{\rm ob})\, b(M, z^{\rm ob})},
+  \qquad
+  \psi(\theta) = \sum_z w_z^{\rm common}\, a_b(z)\,
+  \xi_{\rm NL}(|\Delta\chi(z,\theta)|, z^{\rm ob}),$$
+
+  so the channel is $\mathrm{cl}(R, \theta) = b_{\rm sel}(\theta)\,
+  \psi(\theta) \sum_M w^{\rm cl}_M\,
+  \Delta\Sigma_{\rm mis}(R \mid M, \theta D_A)$. The $b_{\rm sel}(\theta)
+  = B_{\rm small} + (B_{\rm large} - B_{\rm small})\,\sigma(\theta)$
+  sigmoid uses the plateaus interpolated linearly to the slice
+  $z^{\rm ob}$, with $k = 2.5/\theta_\lambda$,
+  $\theta_0 = \theta_\lambda/2$.
+
+**Step 8 — assemble.** Per $R$ on the slice, one $\theta$ loop of
+multiply-adds plus the $\Delta\Sigma_{\rm mis}$ table lookup:
+$\Delta\Sigma^{\rm prj}(R) = \sum_\theta w_\theta\,
+[\mathrm{rnd} + \mathrm{cl}]$; multiply by
+$\langle\Sigma_{\rm crit}^{-1}\rangle(z^{\rm ob})$ for $\gamma_t$. Nine
+outputs (total/rnd/cl × $\Delta\Sigma$/$\gamma_t$/alias) come out of the
+same pass.
+
+**Cost and accuracy.** The whole 180-point wall is an explicit
+$N_\theta \times N_M$ grid + dot products: $\sim 3.2\times$ faster than
+the full `ShearPrjEvaluator` at `n_lnm = 16` / `n_per_seg = 10`, with
+$< 0.2\%$ deviation from it at its full `n_lnm = 24` resolution. The
+full evaluator differs only in Step 7: it keeps the clustered channel's
+$n\,b$ product $z$-resolved (a per-$(\theta, M)$ accumulator) instead of
+frozen + drift-corrected, and it hard-excludes $\Omega(z)$ instead of
+gating it on an option. The adaptive cross-checks (`ShearPrjGsl`,
+`ShearPrjCuhre`) share the same integrand and $\theta$ breakpoints —
+see the next section and {doc}`../variants`.
+
 ## Adaptive integration (reference and validation backends)
 
 Three adaptive backends remain in the pipeline, in distinct roles:

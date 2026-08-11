@@ -58,22 +58,17 @@ NFW — **neighbouring-halo miscentering** in the paper's language: the
 itself, a geometric ingredient with no free nuisance parameters (unlike
 the target-cluster miscentering of {doc}`shear_halo`). The exclusion
 $\theta > \theta_{\rm excl}(z)$ is a line-of-sight **slab** cut at the
-redMaPPer aperture $R_\lambda(1+z^{\rm ob})$, not a 3-D ball. The
-$\theta$ grid is log-GL
-on segments split at
-$\{\theta_{\rm lo}, \theta_{\rm excl,o}, \theta_R(R_k), \theta_\lambda,
-2\theta_\lambda, \theta_{\max}\}$; the $z$ grid is a ring around
-$z^{\rm ob}$ plus foreground/background $\log|\Delta\chi|$ wings — both
-identical to the full evaluator.
+redMaPPer aperture $R_\lambda(1+z^{\rm ob})$, not a 3-D ball.
 
-**The "frozen physics" reduction** (vs `ShearPrjEvaluator`,
-{doc}`../variants`): the random channel's $z$ sum is hoisted exactly; the
-clustered channel freezes the mass dependence at $z^{\rm ob}$ and carries
-the redshift drift through an $r_s(M)$-anchored amplitude
-$a_b(z)$, making the whole wall an explicit fixed
-$N_\theta \times N_M$ grid + dot product — no adaptive integrator.
-$\sim 3.2\times$ faster at `n_lnm = 16` with $< 0.2\%$ deviation from the
-full evaluator at `n_lnm = 24`.
+Evaluation is entirely fixed grids and dot products — feature-pinned
+log-GL in $\theta$, ring + foreground/background wings in $z$, fixed GL
+in $\ln M$, with the random channel's redshift sum hoisted exactly and
+the clustered channel frozen at $z^{\rm ob}$ with an $r_s(M)$-anchored
+drift amplitude ($\sim 3.2\times$ faster than the full evaluator,
+$< 0.2\%$ deviation). **The complete step-by-step recipe — grid
+construction, exclusion mask, channel contractions, table lookups, cost
+— lives in {doc}`../numerics/index`,
+§"The shear-projection recipe, step by step".**
 
 Model derivation: {doc}`../science/index` (projection lensing);
 selection-bias inputs: {doc}`../selection/bsel`; full-fidelity and
