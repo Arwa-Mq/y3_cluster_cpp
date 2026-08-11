@@ -51,7 +51,7 @@ $\sigma(\theta) = [1 + e^{-k(\theta - \theta_0)}]^{-1}$,
 $k = 2.5/\theta_\lambda$, $\theta_0 = \theta_\lambda/2$. The photo-$z$
 width $\sigma_z(z)$ comes from the compiled-in table
 `src/models/z_kernel_data.hh`, and $\Omega(z)$ is deliberately absent
-({doc}`survey_area`). Fixed GL
+({doc}`../modules/survey_area`). Fixed GL
 throughout — ring + foreground/background $\log|\Delta\chi|$ wings in $z$,
 one cached $\theta$ grid split at $\theta_\lambda$, mass integral
 pre-contracted — $\sim 74$ ms for all 12 bins ($\sim 10^3\times$ faster

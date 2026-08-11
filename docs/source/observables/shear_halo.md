@@ -24,25 +24,29 @@ adds the projection term.
 
 ## Numerical framework
 
-The count-weighted lensing operator
-$\langle N\Sigma\rangle = f_{\rm cen}\langle N\Sigma_{\rm cen}\rangle +
-(1 - f_{\rm cen})\langle N\Sigma_{\rm mis}\rangle$ and its miscentering
-treatment follow
-[DES Cluster et al. 2023](https://ui.adsabs.harvard.edu/abs/2023arXiv230906593A/abstract)
-(arXiv:[2309.06593](https://arxiv.org/abs/2309.06593)), the reference
-paper for this software suite. This module evaluates it with the
-miscentering-mixture shear weight, using the DES Y3 redMaPPer
-miscentring calibration of
-[Kelly et al. 2024, MNRAS 533, 572](https://ui.adsabs.harvard.edu/abs/2024MNRAS.533..572K/abstract)
-(arXiv:[2310.13207](https://arxiv.org/abs/2310.13207)) — the Gamma
-offset kernel, an updated analysis of the DES Y1 calibration of
-[Zhang et al. 2019, MNRAS 487, 2578](https://ui.adsabs.harvard.edu/abs/2019MNRAS.487.2578Z/abstract)
-(arXiv:[1901.07119](https://arxiv.org/abs/1901.07119)):
+The full integral — the population operator $N_i[f]$
+({doc}`number_counts`) with the miscentering-mixture shear weight:
+
+$$N_i[\gamma_t^{1h,\rm full}](R) = \int d\ln M \int dz\;
+\Omega(z)\,\frac{dV}{d\Omega\,dz}\,\frac{dn}{d\ln M}(M,z)\,
+S_{ij}(\ln M, z)\;\gamma_t^{1h,\rm full}(R; M, z),$$
 
 $$\gamma_t^{1h,\rm full}(R; M, z) =
 \Big[(1 - f_{\rm mis})\,\Delta\Sigma_{\rm NFW}(R, M)
 + f_{\rm mis}\,\Delta\Sigma_{\rm mis}\big(R, M;\, \tau_{\rm mis} R_\lambda\big)\Big]\,
 \langle\Sigma_{\rm crit}^{-1}\rangle(z),$$
+
+The count-weighted lensing operator and its miscentering treatment
+follow
+[DES Cluster et al. 2023](https://ui.adsabs.harvard.edu/abs/2023arXiv230906593A/abstract)
+(arXiv:[2309.06593](https://arxiv.org/abs/2309.06593)), the reference
+paper for this software suite, using the DES Y3 redMaPPer miscentring
+calibration of
+[Kelly et al. 2024, MNRAS 533, 572](https://ui.adsabs.harvard.edu/abs/2024MNRAS.533..572K/abstract)
+(arXiv:[2310.13207](https://arxiv.org/abs/2310.13207)) — the Gamma
+offset kernel, an updated analysis of the DES Y1 calibration of
+[Zhang et al. 2019, MNRAS 487, 2578](https://ui.adsabs.harvard.edu/abs/2019MNRAS.487.2578Z/abstract)
+(arXiv:[1901.07119](https://arxiv.org/abs/1901.07119)) —
 
 with $R_\lambda = (\lambda/100)^{0.2}\,h^{-1}$Mpc per richness bin.
 This is **target-cluster miscentering** — the assigned redMaPPer centre

@@ -15,11 +15,11 @@ quadrature knob cheat-sheet), `docs/shear1h_radial_factorization.tex`, and
 The recurring population integral is, schematically,
 
 $$\int dz \int dM \int d\lambda_{\rm true}\;
-\mathcal{K}(M, z, \lambda_{\rm true}; \ldots).$$
+\mathcal{S}(M, z, \lambda_{\rm true}; \ldots).$$
 
 For each observable the documentation states which dimensions appear in
 the full physical expression; which integrations are performed
-**analytically** (closed-form richness kernels $\mathcal{K}_i$, $K_j$; the
+**analytically** (closed-form richness kernels $\mathcal{S}_i$, $\mathcal S_j$; the
 sigmoid closure in `bsel`); which are **precomputed** per sample
 ($S_{ij}$ tables, miscentering convolutions); which are **interpolated**;
 and which remain **runtime numerical integrations** (typically only the
@@ -153,7 +153,7 @@ tensor `sel_function/S_stack` ($S_{ij}$ per bin, served via `Interp2D`),
 the HMF through `HMF_t` (which applies the $\Omega_m - \Omega_\nu$
 mass-axis shift and the $(s, q)$ nuisance scaling), the volume element
 through `DV_DO_DZ_t`, the hard-coded survey area $\Omega(z)$
-({doc}`../selection/survey_area`) — and, for the lensing module only,
+({doc}`../modules/survey_area`) — and, for the lensing module only,
 $\langle\Sigma_{\rm crit}^{-1}\rangle(z)$ and the centred NFW
 $\Delta\Sigma_{\rm NFW}$ spline from `haloModel`, plus
 $(f_{\rm mis}, \tau_{\rm mis})$ (defaults 0.22, 0.17).
@@ -271,7 +271,7 @@ Per node, the common weight is $w_z^{\rm GL} \cdot w_z(z, z^{\rm ob})
 \cdot dV/d\Omega dz$, with the parabolic photo-$z$ kernel
 $w_z = \max(0, 1 - u^2)$, $u = (z - z^{\rm ob})/\sigma_z$ (times
 $\Omega(z)$ only if `include_omega_z = 1` — off in the reference run,
-{doc}`../selection/survey_area`).
+{doc}`../modules/survey_area`).
 
 **Step 5 — the exclusion mask.** Per $z$ node, remove angles inside the
 redMaPPer slab: keep $\theta > \theta_{\rm excl}(z)$, with
@@ -395,16 +395,16 @@ $36.7300 \approx \ln 10^{15.95}$, $36.8414 = \ln 10^{16}$.
 
 | Knob | Module | Value | What it controls | Why that value |
 |---|---|---|---|---|
-| `lam_min` / `lam_max` | `sel_function` | $\{20, 30, 45, 60, 200\}$ edges | richness-bin edges of $K_i$ | DES Y3 richness binning; 4 bins $\times$ 3 $z$ bins = 12-cell wall |
-| `zob_min` / `zob_max` | `sel_function` | $\{0.20, 0.35, 0.50, 0.65\}$ edges | photo-$z$ bin edges of $K_j$ | DES Y3 photo-$z$ binning |
-| `sigma_z` | `sel_function` | 0.03 | photo-$z$ scatter in the Gaussian kernel $K_j(z)$ | survey photo-$z$ scatter model |
+| `lam_min` / `lam_max` | `sel_function` | $\{20, 30, 45, 60, 200\}$ edges | richness-bin edges of $\mathcal S_i$ | DES Y3 richness binning; 4 bins $\times$ 3 $z$ bins = 12-cell wall |
+| `zob_min` / `zob_max` | `sel_function` | $\{0.20, 0.35, 0.50, 0.65\}$ edges | photo-$z$ bin edges of $\mathcal S_j$ | DES Y3 photo-$z$ binning |
+| `sigma_z` | `sel_function` | 0.03 | photo-$z$ scatter in the Gaussian kernel $\mathcal S_j(z)$ | survey photo-$z$ scatter model |
 | `zt_low` / `zt_high` | `sel_function` | 0.05 / 0.80 | true-$z$ tabulation range of $S_{ij}$ | brackets the $z^{\rm ob}$ bins $[0.20, 0.65]$ with room for the $\sigma_z = 0.03$ Gaussian tails |
 | `lnm_low` / `lnm_high` | `sel_function` | 29.9336 / 36.8414 | $\ln M$ tabulation range | $[10^{13}, 10^{16}]\,h^{-1}M_\odot$ — full cluster mass range; upper edge above every consumer's integration ceiling |
 | `n_lnm` | `sel_function` | **192** | $\ln M$ grid size of `S_stack` | whole-pipeline optimum of the 2026-05-07 sweep; $<0.05\%$ shift vs 256; 64 is a GL-resonance pathology (avoid) |
 | `n_z` | `sel_function` | 20 | module-internal $z$ grid | ini default (the tabulation grid is `n_z_shared`) |
 | `n_z_shared` | `sel_function` | 64 | shared $z$ grid size of `S_stack` | matches the 1-D $z$ fast path of the 8 EMG coefficient splines |
 | `L_lam` | `sel_function` | 6.0 | half-width of the $\lambda^{\rm tr}$ GL bracket $[\mu_{\rm eff} \pm L_\lambda \sigma_{\rm eff}]$ | $\pm 6\sigma$ captures the shifted-Poisson $P_{\rm HOD}$ tails |
-| `L_z` | `sel_function` | 6.0 | analogous bracket half-width for the $z$ axis | $\pm 6\sigma$ coverage of the Gaussian $K_j$ kernel |
+| `L_z` | `sel_function` | 6.0 | analogous bracket half-width for the $z$ axis | $\pm 6\sigma$ coverage of the Gaussian $\mathcal S_j$ kernel |
 | `N_q` | `sel_function` | 32 | GL nodes in $\lambda^{\rm tr}$ per $(\ln M, z)$ | GL bracket nodes in $\lambda^{\rm tr}$ (knob cheat-sheet) |
 | `algorithm`, `eps_rel`, `eps_abs`, `max_eval`, `use_cartesian_product` | `NumCountsSel`, one-halo shear | (legacy) | Cuhre knobs from the retired adaptive path | **ignored** by the fixed-GL evaluators; still honoured by the `NumCountsFullScalarIntegrand` brute-force reference (`eps_rel` $=1.5\times10^{-3}$, `max_eval` $=10^7$) |
 | `n_lnm` / `n_z` | `NumCountsSel`, one-halo shear | 96 / 64 (defaults) | fixed-GL node counts | z-contracted weight + 1-D mass sum per wall point |

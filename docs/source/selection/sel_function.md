@@ -15,21 +15,55 @@ tensor and interpolate it inside their population integrals.
 
 ## Numerical framework
 
-$$S_{ij}(\ln M, z) = \Big[\textstyle\sum_k W_k\,
-K_i(\lambda_k, z)\, P_{\rm HOD}(\lambda_k \mid M, z)\Big]\, K_j(z),$$
+The full integral: the **richness selection function** — the probability
+that a halo of mass $M$ at true redshift $z^{\rm tr}$ is observed inside
+the $(i, j)$ bin — is the redMaPPer selection function
+$\mathcal S_{ij}$ integrated against the intrinsic richness–mass
+relation,
 
-where $K_i$ differences the EMG CDF of
-$P(\lambda^{\rm ob}\mid\lambda^{\rm tr}, z)$ at the bin edges, $K_j$ is a
-Gaussian photo-$z$ bin kernel of width `sigma_z`, and $P_{\rm HOD}$ is the
-shifted-Poisson richness–mass relation — both defined in
-{doc}`../observables/richness_mass`. In the paper's language: $K_i$ is
-the **observed-richness kernel** $\mathcal{S}_i$, $K_j$ the
-**observed-redshift kernel** $\mathcal{S}_j$, and the
-$\lambda^{\rm tr}$-integrated product is the **richness selection
-function** $S_i(M, z^{\rm tr})$ — together the redMaPPer selection
-function $\mathcal{S}_{ij}$. The $\lambda^{\rm tr}$ sum uses $N_q$
-GL nodes bracketed at $\mu_{\rm eff} \pm L\sigma_{\rm eff}$; the EMG CDF is
-evaluated via `erfcx` at the 5 unique bin edges {20, 30, 45, 60, 200} only.
+$$S_{ij}(M, z^{\rm tr}) =
+\int_{\Delta\lambda_i}\! d\lambda^{\rm ob}
+\int_{\Delta z_j}\! dz^{\rm ob}
+\int_0^\infty\! d\lambda^{\rm tr}\;
+P(\lambda^{\rm ob}\mid\lambda^{\rm tr}, z^{\rm tr})\,
+P(z^{\rm ob}\mid z^{\rm tr}, \Delta\lambda_i)\,
+P(\lambda^{\rm tr}\mid M, z^{\rm tr}).$$
+
+Both bin integrals are analytic, so the tabulated tensor is
+
+$$S_{ij}(\ln M, z) = S_i(\ln M, z)\,\mathcal S_j(z)
+= \Big[\textstyle\sum_k W_k\,
+\mathcal S_i(\lambda_k, z)\, P_{\rm HOD}(\lambda_k \mid M, z)\Big]\,
+\mathcal S_j(z),$$
+
+with the **observed-richness kernel** $\mathcal S_i$ (the closed-form
+Gaussian + EMG CDF difference at the bin edges,
+{doc}`../modules/richness_mass`), the **observed-redshift kernel**
+$\mathcal S_j$ (a Gaussian CDF difference of width `sigma_z`,
+{doc}`../modules/redshift_kernel`), and the shifted-Poisson
+$P_{\rm HOD}$. Only the $\lambda^{\rm tr}$ integral is numerical.
+
+The recipe, per sample:
+
+1. Per $(\ln M, z)$ cell, place $N_q = 32$ Gauss–Legendre nodes in
+   $\lambda^{\rm tr}$ on the adaptive bracket
+   $[\mu_{\rm eff} - L\sigma_{\rm eff},\, \mu_{\rm eff} +
+   L\sigma_{\rm eff}]$, with
+   $\sigma_{\rm eff} = \sqrt{\mu_{\rm sat} +
+   (\sigma_\lambda\mu_{\rm sat})^2}$ and $L = 6$; evaluate
+   $P_{\rm HOD}$ on the full $(192, 64, 32)$ tensor in a single
+   `gammaln` call (narrow-Gaussian fallback where
+   $\mu_{\rm sat} \le 10^{-8}$).
+2. Evaluate the 8 EMG coefficient splines on the 1-D $z$ grid only
+   (saves $\sim 130$ ms/sample), broadcast to
+   $(\mu, \sigma, \tau, f^{\rm prj})$ at each node.
+3. Compute the EMG CDF via `erfcx` at the **5 unique bin edges**
+   $\{20, 30, 45, 60, 200\}$ and difference, giving all four
+   $\mathcal S_i$ tables at once.
+4. Per bin: contract
+   $S_i = \sum_k W_k\, \mathcal S_i\, P_{\rm HOD}$, multiply by
+   $\mathcal S_j(z)$, pack into `S_stack`.
+
 The Python kernels match the C++ models
 (`src/models/mor_hod_t.hh`, `src/models/richness_kernel_t.hh`)
 line-for-line. Full derivation: {doc}`../science/index`.
@@ -69,7 +103,7 @@ N_q    = 32
 |---|---|---|---|
 | `lam_min`, `lam_max` | per-bin observed-richness edges | — | 12-entry wall |
 | `zob_min`, `zob_max` | per-bin observed-redshift edges | — | 12-entry wall |
-| `sigma_z` | photo-$z$ scatter in the redshift kernel $K_j$ | — | 0.03 (all bins) |
+| `sigma_z` | photo-$z$ scatter in the redshift kernel $\mathcal S_j$ | — | 0.03 (all bins) |
 | `zt_low`, `zt_high` | shared true-$z$ grid envelope | — | 0.05, 0.80 |
 | `lnm_low`, `lnm_high` | shared $\ln M$ grid envelope | $\ln(M_\odot/h)$ | 29.9336, 36.8414 |
 | `n_lnm` | $\ln M$ nodes — whole-pipeline optimum 192; **64 is pathological** (GL resonance, 4.5% drift on counts) | — | 192 |

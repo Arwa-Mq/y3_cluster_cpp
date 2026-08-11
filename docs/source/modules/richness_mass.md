@@ -119,14 +119,14 @@ the very line-of-sight structure that adds two-halo lensing signal, so
 Costanzi et al. 2026 propagate $f^{\rm prj}$, $\tau$, and the richness
 excess $\lambda^{\rm ob} - \lambda^{\rm tr}$ into the scale-dependent
 selection-affected bias $b_{\rm sel}(\theta)$ used by
-{doc}`../selection/bsel` and {doc}`shear_projection`.
+{doc}`../selection/bsel` and {doc}`../observables/shear_projection`.
 
 Where the reference pipeline evaluates it:
 
 - {doc}`sel_function <../selection/sel_function>` builds
   $S_{ij}(\ln M, z)$ from both pieces — this is how it enters
-  {doc}`NumCountsSel <number_counts>` and
-  {doc}`Shear1hMisSel <shear_halo>`;
+  {doc}`NumCountsSel <../observables/number_counts>` and
+  {doc}`Shear1hMisSel <../observables/shear_halo>`;
 - {doc}`b_sel_marg <../selection/bsel>` weights the $P[X]$ operators by
   the shifted-Poisson pdf;
 - {doc}`bsel <../selection/bsel>` uses the EMG pdf in the

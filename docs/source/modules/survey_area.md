@@ -41,7 +41,7 @@ the fit is through the number counts themselves.
 |---|---|---|
 | {doc}`NumCountsSel <../observables/number_counts>` | **yes** | cluster count — area sets the expected number |
 | {doc}`Shear1hMisSel <../observables/shear_halo>` | **yes** | count-weighted numerator $N_i[\gamma]$; the area cancels only after division by $N_i[1]$ |
-| {doc}`b_sel_marg <bsel>` | no | the $P[X]$ operators enter downstream only in ratios where $\Omega$ (and the Poisson kernel normalisation $B_i$) cancel; the Python reference has no area weight |
+| {doc}`b_sel_marg <../selection/bsel>` | no | the $P[X]$ operators enter downstream only in ratios where $\Omega$ (and the Poisson kernel normalisation $B_i$) cancel; the Python reference has no area weight |
 | `ShearPrjEvaluator` (`shear_prj`) | no — hard-excluded | surface density: $\Omega$ cancels between numerator and normalisation (explicit comment in `src/models/sigma_prj_t.hh`) |
 | {doc}`shear_prj_frozen_physics <../observables/shear_projection>` | **ini-gated, off** | class default includes it (matching the `ShearPrjGsl` diagnostic); the reference ini sets `include_omega_z = 0`. Verified: with it on, fiducial self-closure breaks ($\log L = -151.7$); off, closure holds ($-0.004$) |
 

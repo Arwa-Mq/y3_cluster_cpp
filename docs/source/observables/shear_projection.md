@@ -26,22 +26,8 @@ $\gamma_t^{\rm theory} = \langle\gamma_t^{1h}\rangle + \gamma_t^{\rm prj}$.
 
 ## Numerical framework
 
-The population-integral framework — bin-averaged lensing predicted
-jointly with the number counts from the same halo population and
-selection kernels — is that of
-[DES Cluster et al. 2023](https://ui.adsabs.harvard.edu/abs/2023arXiv230906593A/abstract)
-(arXiv:[2309.06593](https://arxiv.org/abs/2309.06593)), the reference
-paper for this software suite; the projection-selection extension
-documented here is the model of
-[Costanzi et al. 2026, PhRvD 113, 103508](https://ui.adsabs.harvard.edu/abs/2026PhRvD.113j3508C/abstract)
-(arXiv:[2604.05833](https://arxiv.org/abs/2604.05833)) built on top of
-it: a scale-dependent parametrization of the optical cluster bias whose
-small- and large-scale plateaus are set by the amplitude of projection
-effects, with the two-halo profile expressed through off-axis
-line-of-sight haloes.
-
-Per $(\lambda^{\rm ob}, z^{\rm ob}, R)$ wall point, the projected surface
-density of line-of-sight structure:
+The full integral — per $(\lambda^{\rm ob}, z^{\rm ob}, R)$ wall point,
+the projected surface density of line-of-sight structure:
 
 $$\Delta\Sigma^{\rm prj}(R) = \int dz\, d\ln M\, d\theta\;
 w_z(z, z^{\rm ob})\, \frac{dV}{d\Omega\,dz}\, n(M, z)\,
@@ -50,7 +36,23 @@ w_z(z, z^{\rm ob})\, \frac{dV}{d\Omega\,dz}\, n(M, z)\,
 \Delta\Sigma_{\rm mis}\big(R \mid M,\, \theta D_A(z^{\rm ob})\big)\,
 \mathbb{1}\big[\theta > \theta_{\rm excl}(z)\big],$$
 
-with the parabolic photo-$z$ kernel $w_z$, the analytic
+then $\gamma_t^{\rm prj} = \Delta\Sigma^{\rm prj}\,
+\langle\Sigma_{\rm crit}^{-1}\rangle(z^{\rm ob})$. The
+population-integral framework — bin-averaged lensing predicted jointly
+with the number counts from the same halo population and selection
+kernels — is that of
+[DES Cluster et al. 2023](https://ui.adsabs.harvard.edu/abs/2023arXiv230906593A/abstract)
+(arXiv:[2309.06593](https://arxiv.org/abs/2309.06593)), the reference
+paper for this software suite; the projection-selection extension is
+the model of
+[Costanzi et al. 2026, PhRvD 113, 103508](https://ui.adsabs.harvard.edu/abs/2026PhRvD.113j3508C/abstract)
+(arXiv:[2604.05833](https://arxiv.org/abs/2604.05833)) built on top of
+it: a scale-dependent parametrization of the optical cluster bias whose
+small- and large-scale plateaus are set by the amplitude of projection
+effects, with the two-halo profile expressed through off-axis
+line-of-sight haloes.
+
+The integrand uses the parabolic photo-$z$ kernel $w_z$, the analytic
 $b_{\rm sel}(\theta) = B_{\rm small} + (B_{\rm large} - B_{\rm small})\,
 \sigma(\theta)$ from the `bsel` plateaus, and the single-offset miscentred
 NFW — **neighbouring-halo miscentering** in the paper's language: the
@@ -127,7 +129,7 @@ density it cancels between numerator and normalisation, and the sibling
 the `ShearPrjGsl` diagnostic), so the ini overrides it. Verified
 empirically: with it on, fiducial self-closure breaks
 ($\log L = -151.7$ instead of $\approx 0$); off, closure holds
-($-0.004$). See {doc}`../selection/survey_area`.
+($-0.004$). See {doc}`../modules/survey_area`.
 ```
 
 ## DataBlock inputs

@@ -18,20 +18,18 @@ of the theory vector and the denominator of the stacked one-halo shear.
 
 ## Numerical framework
 
-The number-count forward model follows
-[DES Cluster et al. 2023](https://ui.adsabs.harvard.edu/abs/2023arXiv230906593A/abstract)
-(arXiv:[2309.06593](https://arxiv.org/abs/2309.06593)) — the reference
-paper for this software suite: cluster counts predicted per
-$(\lambda^{\rm ob}, z^{\rm ob})$ bin from the halo mass function, the
-survey area, the volume element, and the richness–mass and photo-$z$
-kernels (its Eq. 1). This module is the $f = 1$ instance of the
+The full integral — this module is the $f = 1$ instance of the
 population operator
 
 $$N_i[f] = \int d\ln M \int dz\;
 \Omega(z)\,\frac{dV}{d\Omega\,dz}\,\frac{dn}{d\ln M}(M,z)\,
 S_{ij}(\ln M, z)\, f(\ln M, z),$$
 
-with $\Omega(z)$ the survey area ({doc}`../selection/survey_area`) and
+the number-count forward model of
+[DES Cluster et al. 2023](https://ui.adsabs.harvard.edu/abs/2023arXiv230906593A/abstract)
+(arXiv:[2309.06593](https://arxiv.org/abs/2309.06593), its Eq. 1) — the
+reference paper for this software suite —
+with $\Omega(z)$ the survey area ({doc}`../modules/survey_area`) and
 $S_{ij}$ the tabulated selection function
 ({doc}`../selection/sel_function`). Evaluation is fixed Gauss–Legendre:
 the $z$ axis is contracted once per sample into per-bin mass weights,

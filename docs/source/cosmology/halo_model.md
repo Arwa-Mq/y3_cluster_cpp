@@ -19,21 +19,65 @@ tables $\Sigma_{\rm NFW}$, $\Delta\Sigma_{\rm NFW}$ read by
 
 ## Numerical framework
 
-Bias from the $z=0$ peak height with growth-factor redshift scaling:
+The single most multi-product module in the pipeline: one `execute`
+call computes up to **four families of quantities**, all backed by
+`cluster_toolkit` (a hard runtime dependency — see the install note in
+[BUILDING.md](https://github.com/estevesjh/y3_cluster_cpp/blob/master/BUILDING.md)).
+The governing expressions, in the order they are evaluated:
+
+**1. Halo bias** — Tinker 2010 at the growth-rescaled $z{=}0$ peak
+height ($\Delta = 200\bar\rho_m$):
 
 $$b(M, z) = b_{\rm Tinker}\!\left(\frac{\nu(M)}{D(z)/D(0)}\right),
 \qquad \nu(M) = \frac{\delta_c}{\sigma(M, z{=}0)} .$$
 
-$\nu(M)$ is computed once from the linear $P(k)$
-(`cluster_toolkit.peak_height.nu_at_M`); per redshift slice the bias is
-`bias_at_nu(nu / (D(z)/D(0)))` with $\Delta = 200$, and
-$\xi_{\rm NL}(r,z)$ comes from `ct.xi.xi_mm_at_r` on the nonlinear (or
-fallback linear) spectrum. The $D(0)$ renormalisation is load-bearing:
-without it the matter-domination-normalised CosmoSIS growth inflates $\nu$
-by $1/D(0) \simeq 1.32$ and the bias by up to $2\times$.
+**2. Nonlinear matter correlation** — per redshift slice, the Fourier
+transform of the (nonlinear, or fallback linear) power spectrum:
+
+$$\xi_{\rm NL}(r, z) = \frac{1}{2\pi^2}\int dk\, k^2\,
+P_{\rm NL}(k, z)\, \frac{\sin kr}{kr},
+\qquad r \in [10^{-3}, 10^{3}]\ {\rm cMpc}/h,\ 128\ \text{nodes}.$$
+
+**3. One-halo NFW lensing tables** (`compute_lensing_1h`) — the
+analytic Wright & Brainerd projected NFW,
+
+$$\Sigma_{\rm NFW}(R \mid M, c(M)), \qquad
+\Delta\Sigma_{\rm NFW}(R \mid M, c(M)) =
+\bar\Sigma(<R) - \Sigma(R),$$
+
+with the Child-18 concentration–mass relation $c(M)$, on the
+$(M, R_\perp)$ grid — the centred profile `Shear1hMisSel` consumes.
+
+**4. Two-halo lensing tables** (`compute_lensing_2h`, **off** in the
+reference run) — the Hankel chain
+$P \to \xi \to \Sigma_{\rm hh} \to \Delta\Sigma_{\rm hh}$
+({doc}`../observables/second_halo_term`).
+
+The algorithm per sample: build the mass grid; compute $\nu(M)$ once at
+$z = 0$ (`cluster_toolkit.peak_height.nu_at_M` on the linear $P(k)$);
+loop over the 50 power-spectrum redshift slices evaluating
+`bias_at_nu(nu / (D(z)/D(0)))` and `ct.xi.xi_mm_at_r`; write the bias
+and $\xi_{\rm NL}$ grids plus $\rho_c(z) = \Omega_m\rho_{c,0}(1+z)^3$
+and the `scaleShiftCosmo` factors; then run whichever lensing branches
+are enabled. GSL's abort-on-error handler is disabled at import (via
+ctypes) so extreme cosmologies raise Python exceptions instead of
+killing the MCMC worker.
+
+Two load-bearing details:
+
+- **The $D(0)$ renormalisation**: CosmoSIS growth is
+  matter-domination-normalised ($D(0) \simeq 0.76$); dividing by $D(z)$
+  un-normalised inflates $\nu$ by $1/D(0) \simeq 1.32$ and the bias by
+  up to $2\times$ (a pre-May-2026 bug, fixed).
+- **The 1h/2h flag split**: the 2h Hankel loop costs 200–300 ms/sample
+  at $N_z = 50$ — the majority of the module's runtime — and nothing in
+  the reference pipeline reads its outputs, so `compute_lensing_2h = F`
+  is a pure skip.
 
 Model details: {doc}`halo_bias` (bias), {doc}`../observables/second_halo_term`
-(lensing branches).
+(lensing branches); algorithm source:
+[pipeline_modules.tex](https://github.com/estevesjh/y3_cluster_cpp/blob/master/docs/pipeline_modules.tex)
+§halo_model.
 
 ## CosmoSIS setup
 

@@ -25,7 +25,6 @@ observables/number_counts
 observables/shear_halo
 observables/second_halo_term
 observables/shear_projection
-observables/richness_mass
 observables/likelihood
 ```
 
@@ -48,7 +47,15 @@ cosmology/sigma_crit_inv
 
 selection/sel_function
 selection/bsel
-selection/survey_area
+```
+
+```{toctree}
+:maxdepth: 1
+:caption: Modules
+
+modules/richness_mass
+modules/redshift_kernel
+modules/survey_area
 ```
 
 ```{toctree}

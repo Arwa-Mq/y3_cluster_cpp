@@ -44,14 +44,14 @@ $S_{ij}(\ln M, z)$ the richness-selection tensor published by
 `sel_function`,
 
 $$
-S_{ij}(\ln M, z) = S_i(\ln M, z)\cdot K_j(z)
- = \Big[\int d\lambda^{\rm tr}\, K_i(\lambda^{\rm tr}, z)\,
-   P_{\rm HOD}(\lambda^{\rm tr} \,|\, M, z)\Big]\cdot K_j(z),
+S_{ij}(\ln M, z) = S_i(\ln M, z)\cdot \mathcal S_j(z)
+ = \Big[\int d\lambda^{\rm tr}\, \mathcal S_i(\lambda^{\rm tr}, z)\,
+   P_{\rm HOD}(\lambda^{\rm tr} \,|\, M, z)\Big]\cdot \mathcal S_j(z),
 $$
 
-with $K_i$ the richness-bin kernel (a closed-form CDF difference of the
+with $\mathcal S_i$ the richness-bin kernel (a closed-form CDF difference of the
 Costanzi EMG $P(\lambda^{\rm ob}|\lambda^{\rm tr}, z)$ — see
-[Selection functions](#selection-functions)) and $K_j$ a Gaussian
+[Selection functions](#selection-functions)) and $\mathcal S_j$ a Gaussian
 photo-$z$ CDF difference. The weight $f$ selects the observable:
 
 | Weight $f$ | Module | Observable built |
@@ -816,7 +816,7 @@ all depend on $(\lambda^{\mathrm{tr}}, z)$ and are calibrated empirically
 ### The richness-bin selection kernel
 
 This section defines the closed-form bin-integrated kernel
-$\mathcal K_i(\lambda^{\mathrm{tr}}, z)$ — the probability, at fixed
+$\mathcal S_i(\lambda^{\mathrm{tr}}, z)$ — the probability, at fixed
 $\lambda^{\mathrm{tr}}$, of being observed inside the richness bin
 $\Delta\lambda_i \equiv [\lambda_i^{\min}, \lambda_i^{\max}]$ — and the
 Gauss–Legendre quadrature that assembles the richness selection function
@@ -827,7 +827,7 @@ $S_i(M, z^{\mathrm{tr}})$.
 The bin-integrated observational kernel is
 
 $$
-\mathcal K_i(\lambda^{\mathrm{tr}}, z)
+\mathcal S_i(\lambda^{\mathrm{tr}}, z)
 \equiv
 \int_{\lambda_i^{\min}}^{\lambda_i^{\max}}
 d\lambda^{\mathrm{ob}}\,
@@ -838,14 +838,14 @@ Inserting the projection kernel and exchanging the sum with the bin
 integral yields
 
 $$
-\mathcal K_i(\lambda^{\mathrm{tr}}, z)
+\mathcal S_i(\lambda^{\mathrm{tr}}, z)
 =
-(1-f^{\mathrm{prj}})\,\mathcal K_i^{\mathrm{G}}
+(1-f^{\mathrm{prj}})\,\mathcal S_i^{\mathrm{G}}
 +
-f^{\mathrm{prj}}\,\mathcal K_i^{\mathrm{EMG}},
+f^{\mathrm{prj}}\,\mathcal S_i^{\mathrm{EMG}},
 $$
 
-where $\mathcal K_i^{\mathrm{G}}$ and $\mathcal K_i^{\mathrm{EMG}}$ are the
+where $\mathcal S_i^{\mathrm{G}}$ and $\mathcal S_i^{\mathrm{EMG}}$ are the
 bin integrals of the Gaussian and EMG components respectively. Each piece
 integrates analytically.
 
@@ -854,7 +854,7 @@ integrates analytically.
 The Gaussian term is the integral of a normal PDF between two limits,
 
 $$
-\mathcal K_i^{\mathrm{G}}
+\mathcal S_i^{\mathrm{G}}
 =
 \Phi\!\left(\frac{\lambda_i^{\max}-\mu}{\sigma}\right)
 -
@@ -870,7 +870,7 @@ $\mu = \lambda^{\mathrm{tr}} + \Delta\mu$.
 The EMG contribution is the difference of the EMG CDF at the two bin edges,
 
 $$
-\mathcal K_i^{\mathrm{EMG}}
+\mathcal S_i^{\mathrm{EMG}}
 =
 F_{\mathrm{EMG}}(\lambda_i^{\max}; \mu, \sigma, \tau)
 -
@@ -944,7 +944,7 @@ $\left.g(\lambda^{\mathrm{ob}})\right|_{\Delta\lambda_i} \equiv
 g(\lambda_i^{\max}) - g(\lambda_i^{\min})$, the compact form is
 
 $$
-\mathcal K_i(\lambda^{\mathrm{tr}}, z)
+\mathcal S_i(\lambda^{\mathrm{tr}}, z)
 =
 (1-f^{\mathrm{prj}})\left.\Phi\!\left(\frac{\lambda^{\mathrm{ob}}-\mu}{\sigma}\right)\right|_{\Delta\lambda_i}
 +
@@ -956,7 +956,7 @@ $\mu = \lambda^{\mathrm{tr}} + \Delta\mu$ explicitly gives the fully
 expanded closed form
 
 $$
-\mathcal K_i(\lambda^{\mathrm{tr}}, z)
+\mathcal S_i(\lambda^{\mathrm{tr}}, z)
 =
 \left.\Phi\!\left(\frac{\lambda^{\mathrm{ob}}-\lambda^{\mathrm{tr}}-\Delta\mu}{\sigma}\right)\right|_{\Delta\lambda_i}
 -\,
@@ -972,14 +972,14 @@ $\lambda_i^{\min/\max} - \lambda^{\mathrm{tr}} - \Delta\mu$.
 
 #### Gauss–Legendre quadrature and the $S_i(\ln M, z)$ assembly
 
-With $\mathcal K_i$ known analytically, the richness selection function
+With $\mathcal S_i$ known analytically, the richness selection function
 reduces to a single integral against the mass–richness PDF,
 
 $$
 S_i(M, z^{\mathrm{tr}})
 =
 \int_0^\infty d\lambda^{\mathrm{tr}}\,
-\mathcal K_i(\lambda^{\mathrm{tr}}, z^{\mathrm{tr}})\,
+\mathcal S_i(\lambda^{\mathrm{tr}}, z^{\mathrm{tr}})\,
 P(\lambda^{\mathrm{tr}} \mid M, z^{\mathrm{tr}}),
 $$
 
@@ -991,7 +991,7 @@ S_i(M, z^{\mathrm{tr}})
 \approx
 \sum_{k=1}^{N_q}
 W_k\,
-\mathcal K_i(\lambda_k, z^{\mathrm{tr}})\,
+\mathcal S_i(\lambda_k, z^{\mathrm{tr}})\,
 P(\lambda_k \mid M, z^{\mathrm{tr}}),
 \qquad
 \lambda_k=\frac{b-a}{2}\,t_k+\frac{a+b}{2},
@@ -1032,12 +1032,12 @@ $$
 =
 \int dM \int dz^{\mathrm{tr}}\;
 \Omega(z^{\mathrm{tr}})\,\frac{dV}{d\Omega\,dz^{\mathrm{tr}}}\,n(M, z^{\mathrm{tr}})\;
-S_i(M, z^{\mathrm{tr}})\,\mathcal K_j(z^{\mathrm{tr}}),
+S_i(M, z^{\mathrm{tr}})\,\mathcal S_j(z^{\mathrm{tr}}),
 $$
 
 where the observed-redshift kernel factorises as a difference of normal
 CDFs,
-$\mathcal K_j(z^{\mathrm{tr}}) =
+$\mathcal S_j(z^{\mathrm{tr}}) =
 \left.\Phi\!\left((z^{\mathrm{ob}}-z^{\mathrm{tr}})/\sigma_z\right)\right|_{\Delta z_j}$,
 with bin-dependent photo-$z$ scatter $\sigma_z \equiv \sigma_z(\Delta\lambda_i)$.
 The evaluation grid in $(\ln M, z)$ then needs only elementary special
