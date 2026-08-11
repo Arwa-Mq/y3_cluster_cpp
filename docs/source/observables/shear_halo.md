@@ -1,6 +1,6 @@
 # One-Halo Lensing
 
-`C++` · `y3_cluster_cpp` · `Cluster observable` · module `Shear1hMisSel`
+`C++` · `y3_cluster_cpp` · `Cluster observable` · module `Shear1hMisSel` · `28 ms/sample`
 
 Computes the population-integrated one-halo tangential shear
 $N_i[\gamma_t^{1h,\rm full}](R)$ — the centred + miscentred NFW profile

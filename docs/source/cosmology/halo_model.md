@@ -1,6 +1,6 @@
 # Halo Model
 
-`Python` · `y3_cluster_cpp` (`y3_buzzard/`) · `Halo population` · module `halo_model`
+`Python` · `y3_cluster_cpp` (`y3_buzzard/`) · `Halo population` · module `halo_model` · `141 ms/sample`
 
 Publishes the halo-model ingredients consumed by half the downstream
 pipeline: the Tinker-2010 halo bias $b(M,z)$, the nonlinear matter

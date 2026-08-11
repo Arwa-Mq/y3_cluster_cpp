@@ -1,6 +1,6 @@
 # Growth Factor
 
-`C` · `CosmoSIS Standard Library` · `Cosmology` · module `GrowthFactor`
+`C` · `CosmoSIS Standard Library` · `Cosmology` · module `GrowthFactor` · `<1 ms/sample`
 
 Computes the linear growth factor $D(z)$ and growth rate $f(z)$ for a flat
 cosmology. `cp_camb` uses $D(z)$ to reconstruct the redshift evolution of

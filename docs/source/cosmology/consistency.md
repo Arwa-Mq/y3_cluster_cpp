@@ -1,6 +1,6 @@
 # CosmoSIS Consistency
 
-`Python` · `CosmoSIS Standard Library` · `Cosmology` · module `consistency`
+`Python` · `CosmoSIS Standard Library` · `Cosmology` · module `consistency` · `<1 ms/sample`
 
 Completes the cosmological parameter set: from the sampled subset it derives
 every related parameter ($h_0 \leftrightarrow H_0$, $\Omega_c$,

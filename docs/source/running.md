@@ -44,6 +44,33 @@ likelihoods = likelihoods
 | 12 | {doc}`shear_prj_frozen_physics <observables/shear_projection>` | projection shear $\gamma_t^{\rm prj}(R)$ | C++ · `y3_cluster_cpp` |
 | 13 | {doc}`likelihoods <observables/likelihood>` | Gaussian $\log L$ | Python · `y3_cluster_cpp` |
 
+## Per-module timing
+
+Wall-clock per pipeline evaluation (CosmoSIS `timing = T` on the
+reference run; CV = std/mean). The whole forward model costs
+**712 ± 19 ms per sample**:
+
+| Module | mean (ms) | % of pipeline | std (ms) | CV |
+|---|---:|---:|---:|---:|
+| `sel_function` | 197 | 27.7% | 18 | 0.09 |
+| `MfTinker` | 155 | 21.8% | 6 | 0.04 |
+| `halo_model` | 141 | 19.8% | 2 | 0.01 |
+| `shear_prj_frozen_physics` | 82 | 11.5% | 4 | 0.04 |
+| `b_sel_marg` | 66 | 9.3% | 1 | 0.01 |
+| `Shear1hMisSel` | 28 | 3.9% | 1 | 0.02 |
+| `NumCountsSel` | 22 | 3.1% | <1 | 0.02 |
+| `bsel` | 16 | 2.2% | 1 | 0.05 |
+| `cp_camb` | 4 | 0.6% | 1 | 0.35 |
+| `GrowthFactor` / `consistency` / `average_sigma_crit_inv` / `likelihoods` | ~0 | <0.1% | — | — |
+| **Total** | **712** | 100% | 19 | 0.03 |
+
+The budget is dominated by the Python tabulation stages
+(`sel_function`, `halo_model`) and the Fortran mass function — the C++
+observable integrals together cost less than 200 ms. Timings are
+near-deterministic (CV ≤ 0.09 everywhere but the trivially cheap
+`cp_camb`), the design goal of the fixed-GL evaluators
+({doc}`numerics/index`).
+
 Data flow (edge labels are the DataBlock sections passed between
 modules; blue = cosmology quantities, orange = selection effects,
 green = cluster observables, grey = likelihood):

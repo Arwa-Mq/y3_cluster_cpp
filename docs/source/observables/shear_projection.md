@@ -1,6 +1,6 @@
 # Shear Projection
 
-`C++` · `y3_cluster_cpp` · `Cluster observable` · module `shear_prj_frozen_physics`
+`C++` · `y3_cluster_cpp` · `Cluster observable` · module `shear_prj_frozen_physics` · `82 ms/sample`
 
 Computes $\Sigma^{\rm prj}$ — in the paper's language, **the two-halo
 term sourced by correlated line-of-sight structure**, carrying the

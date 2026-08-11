@@ -1,6 +1,6 @@
 # Cluster Number Counts
 
-`C++` · `y3_cluster_cpp` · `Cluster observable` · module `NumCountsSel`
+`C++` · `y3_cluster_cpp` · `Cluster observable` · module `NumCountsSel` · `22 ms/sample`
 
 Computes the expected cluster count $N_i[1]$ in each of the 12
 $(\lambda^{\rm ob}, z^{\rm ob})$ bins by integrating the halo mass function

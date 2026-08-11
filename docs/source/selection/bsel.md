@@ -15,7 +15,7 @@ The model is
 
 ## The $\mathcal{P}[X]$ Operators
 
-`C++` · `y3_cluster_cpp` · `Selection` · module `b_sel_marg`
+`C++` · `y3_cluster_cpp` · `Selection` · module `b_sel_marg` · `66 ms/sample`
 
 Co-computes the three Costanzi-2026 scalars $(P_1, I_1, J)$ on the
 12-bin $(z^{\rm ob}, \lambda^{\rm ob})$ wall in one fixed-GL pass.
@@ -113,7 +113,7 @@ lambda_bin = 0 1 2 3  0 1 2 3  0 1 2 3
 
 ## Analytic Closure for $b_{\rm sel}(\theta)$
 
-`Python` · `y3_cluster_cpp` (`y3_buzzard/`) · `Selection` · module `bsel`
+`Python` · `y3_cluster_cpp` (`y3_buzzard/`) · `Selection` · module `bsel` · `16 ms/sample`
 
 Closes the $(P_1, I_1, J)$ operators into the per-bin bias plateaus and
 publishes the two scalars from which the full $\theta$ dependence is

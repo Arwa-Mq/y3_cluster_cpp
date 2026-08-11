@@ -1,6 +1,6 @@
 # Inverse Critical Surface Density
 
-`Python` · `y3_cluster_cpp` · `Lensing geometry` · module `average_sigma_crit_inv`
+`Python` · `y3_cluster_cpp` · `Lensing geometry` · module `average_sigma_crit_inv` · `<1 ms/sample`
 
 Computes the source-averaged inverse critical surface density
 $\langle\Sigma_{\rm crit}^{-1}\rangle(z_l)$ — the geometric factor that
