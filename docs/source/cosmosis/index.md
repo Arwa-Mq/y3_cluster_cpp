@@ -12,23 +12,24 @@ trace of the reference configuration.
    CosmoPower emulator.
 2. **This analysis's own modules** — the C++ `.so` files under
    `release-build/src/modules/…` and the Python modules under
-   `y3_buzzard/` and `src/modules/…/*.py`, documented in
-   {doc}`../modules/index`.
+   `y3_buzzard/` and `src/modules/…/*.py`, documented in the per-module
+   pages linked from {doc}`../running`.
 3. **External dependencies** — CUBA/cubacpp, PAGANI
    (`gpuintegration`), GSL, `cluster_toolkit`, and the CUDA toolkit for
    the GPU variants.
 
 ## The reference configuration
 
-`des-cluster-nersc/cosmosis-models/mock_mcmc_cp_camb.ini` @ `5055375`
-(2026-08-09). Module list:
+`des-nersc-cluster-scripts/cosmosis-models/mock_mcmc_buzzard.ini` @
+`9fd24dd` (branch `polychord-widePlanck-logspace-ab`) — the full trace
+is {doc}`../running`. Module list:
 
 ```text
 consistency  GrowthFactor  cp_camb  MfTinker  halo_model
 average_sigma_crit_inv  sel_function
 NumCountsSel  Shear1hMisSel
 b_sel_marg  bsel
-shear_prj
+shear_prj_frozen_physics
 likelihoods
 ```
 
@@ -36,20 +37,18 @@ Key facts:
 
 - **Samplers**: `test` for a single smoke sample; `apriori` for prior
   coverage; `emcee` (64 walkers) and `polychord` (500 live points) for
-  production. Closure requirement: $\log L \approx 0$ at the fiducial
-  point, and the posterior recovers the fiducial HOD parameters.
+  production.
 - **Values**: `mock_mcmc_widePlanck_values.ini` — 5 cosmology + 5 HOD
-  parameters varied.
-- **Data vector**: `mock_dv_widePlanck_jkcov.npz` — 12 number counts +
-  120 shear points; Poisson number-count covariance and the Buzzard
-  jackknife shear covariance.
+  parameters varied, flat priors.
+- **Data vector**: `mock_dv_buzzard.npz` — 12 number counts + 180 shear
+  points (15 radii); Y1-derived number-count and shear inverse
+  covariances. The widePlanck self-closure variant uses
+  `mock_dv_widePlanck_jkcov.npz` (120 points, jackknife shear
+  covariance) — see {doc}`../variants`.
 - **Naming convention**: C++ modules use CamelCase section names, Python
   modules snake_case — except modules whose source hardcodes
-  `module_label()` (`b_sel_marg`, `shear_prj`), which keep their legacy
-  lowercase names.
-- The copy of this file inside `y3_cluster_cpp/cosmosis-models/` is the
-  **single-sample smoke variant** (test sampler, centered-only
-  `Shear1hSel`).
+  `module_label()` (`b_sel_marg`, `shear_prj_frozen_physics`), which
+  keep their lowercase labels.
 
 Run pipelines from the sibling repositories with `Y3_CLUSTER_CPP_DIR`
 pointing at this tree, so the built `.so` files under
@@ -60,12 +59,17 @@ chain handling, mock-data-vector generation) lives in
 
 ## DataBlock trace
 
-`docs/figs/real_pipeline_extract.ini` is a trimmed copy of the reference
-configuration that runs the first nine stages (consistency →
+`docs/figs/real_pipeline_extract.ini` is a trimmed copy of the
+**widePlanck variant** (10-radii grid, `unity = T`, `ShearPrjEvaluator`
+projection stage) that runs the first nine stages (consistency →
 `Shear1hMisSel`) under the test sampler, dumping every DataBlock section
 to `real_pipeline_extract_output/`. Shapes below are read directly from
 those dumps; stages past `Shear1hMisSel` are described from the module
-sources since the extract stops before them.
+sources. Under the Buzzard reference configuration the shear vectors are
+180-long (15 radii), `sci_average` is physical rather than unity, and
+the projection sections are written by `ShearPrjFrozenPhysics`
+(`dsigma_prj_frozen_physics/*`, `shear_prj_frozen_physics/*`, plus the
+`shear_prj/*` alias) — per-module pages have the exact keys.
 
 | Stage (module) | Sections written | Key contents (names + shapes) |
 |---|---|---|

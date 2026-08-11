@@ -3,7 +3,8 @@
 This part documents the mathematical definition of each pipeline
 observable and of the selection functions that enter them. Definitions are
 implementation-independent; the numerical treatment lives in
-{doc}`../numerics/index` and the code mapping in {doc}`../modules/index`.
+{doc}`../numerics/index` and the code mapping in the per-module pages
+linked from {doc}`../running`.
 
 Source material: `RichnessSelection/docs/richness_selection_function.tex`
 (selection functions and richness–mass models),

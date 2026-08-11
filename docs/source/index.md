@@ -1,60 +1,84 @@
 # DES Y3 Cluster Cosmology
 
-Technical documentation of the DES Y3 cluster-cosmology prediction pipeline:
-the scientific model, the numerical recipes, and their implementation in
-`y3_cluster_cpp` and its companion Python modules.
+Documentation of the DES Y3 cluster-cosmology CosmoSIS pipeline: how to
+run the reference analysis, and what every module loads, reads, computes,
+and writes.
 
-The documentation is organised so that, for any quantity entering the
-likelihood, a reader can answer four questions:
-
-1. **What** quantity is being computed?
-2. What is its **mathematical definition**?
-3. How is the expression **evaluated numerically**?
-4. **Where** is the calculation implemented in the repository?
-
-The scientific definition of each observable is kept independent of the
-implementation; CPU and GPU code paths are described where relevant.
+Start with {doc}`running`, then follow the per-module pages. Each module
+page answers, in order: what it computes, which script implements it,
+where that script lives, how it is configured, what DataBlock values it
+reads and writes, and which module consumes its outputs.
 
 ```{toctree}
-:maxdepth: 2
+:maxdepth: 1
 :caption: Getting started
 
-overview
+running
 installation
 ```
 
 ```{toctree}
-:maxdepth: 2
-:caption: Mathematical Framework
+:maxdepth: 1
+:caption: Cluster observables
 
+observables/number_counts
+observables/shear_halo
+observables/second_halo_term
+observables/shear_projection
+observables/richness_mass
+observables/likelihood
+```
+
+```{toctree}
+:maxdepth: 1
+:caption: Cosmology quantities
+
+cosmology/consistency
+cosmology/growth_factor
+cosmology/cp_camb
+cosmology/mf_tinker
+cosmology/halo_model
+cosmology/halo_bias
+cosmology/sigma_crit_inv
+```
+
+```{toctree}
+:maxdepth: 1
+:caption: Selection effects
+
+selection/sel_function
+selection/bsel
+selection/survey_area
+```
+
+```{toctree}
+:maxdepth: 1
+:caption: Variants and history
+
+variants
+modules/historical
+```
+
+```{toctree}
+:maxdepth: 1
+:caption: Background chapters
+
+overview
 science/index
 systematics/index
-```
-
-```{toctree}
-:maxdepth: 2
-:caption: Numerics and implementation
-
 numerics/index
-modules/index
-cosmosis/index
-```
-
-```{toctree}
-:maxdepth: 2
-:caption: Data and validation
-
 data/index
 validation/index
+cosmosis/index
 ```
 
 ## Archival documents
 
 The LaTeX documents below are the archival, paper-grade record from which
-much of this site is ported. Each ported chapter cites its source; where
-this site and a PDF disagree, the site is the living reference. The
-sources live under `docs/` (PDFs are built locally with `pdflatex`; they
-are deliberately not tracked in git):
+the background chapters are ported. Where this site and a PDF disagree,
+the site is the living reference. The sources live under `docs/` (PDFs
+are built locally with `pdflatex`; they are deliberately not tracked in
+git):
 
 - [pipeline_modules.tex](https://github.com/estevesjh/y3_cluster_cpp/blob/master/docs/pipeline_modules.tex)
   — wired-pipeline algorithms, DataBlock contracts, timing audit,

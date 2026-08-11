@@ -6,14 +6,14 @@ full CosmoSIS pipeline computes, and where the repository boundary ends**.
 ```{admonition} Reference configuration
 :class: important
 Throughout this documentation the *reference pipeline* is
-`cosmosis-models/mock_mcmc_cp_camb.ini` in the **des-cluster-nersc**
-repository (commit `5055375`, 2026-08-09): the production mock-MCMC
-configuration, wiring the miscentering-aware one-halo branch
-(`Shear1hMisSel`) and the fixed-GL projection evaluator
-(`ShearPrjEvaluator`, section `shear_prj`). The copy of the same file
-inside `y3_cluster_cpp/cosmosis-models/` is its single-sample smoke
-variant (test sampler, centered-only `Shear1hSel`) and is documented as
-such.
+`cosmosis-models/mock_mcmc_buzzard.ini` in the
+**des-nersc-cluster-scripts** repository
+(branch `polychord-widePlanck-logspace-ab`, commit `9fd24dd`): the
+Buzzard convergence-test configuration, wiring the miscentering-aware
+one-halo branch (`Shear1hMisSel`) and the frozen-physics projection
+evaluator (`ShearPrjFrozenPhysics`, section `shear_prj_frozen_physics`).
+See {doc}`running` for the full trace and {doc}`variants` for the
+widePlanck self-closure and other retained configurations.
 ```
 
 ## Purpose of `y3_cluster_cpp`
@@ -58,8 +58,9 @@ tangential shear in bins of observed richness $\lambda_{\rm ob}$ and
 observed redshift $z_{\rm ob}$. The reference binning is 4 richness bins,
 $\lambda_{\rm ob} \in \{[20,30),\,[30,45),\,[45,60),\,[60,200)\}$, times 3
 redshift bins, $z_{\rm ob} \in \{[0.20,0.35),\,[0.35,0.50),\,[0.50,0.65)\}$
-— 12 bins in total, with 10 radial points per bin for the lensing profile
-(a 12-point number-count vector and a 120-point shear vector).
+— 12 bins in total, with 15 radial points per bin for the lensing profile
+(a 12-point number-count vector and a 180-point shear vector; the
+widePlanck self-closure variant uses 10 radii → 120 points).
 
 ### Number counts
 
@@ -160,12 +161,11 @@ that prevents this additive decomposition (see
 {doc}`systematics/index`).
 
 ```{note}
-The reference mock configuration runs `average_sigma_crit_inv` with
+The widePlanck self-closure variant runs `average_sigma_crit_inv` with
 `unity = T`, i.e. $\langle\Sigma_{\rm crit}^{-1}\rangle \equiv 1$, so the
-quantity actually emitted and fitted is $\Delta\Sigma(R)$. This keeps the
-mock data vector and the theory prediction the same observable. With a
-physical $\langle\Sigma_{\rm crit}^{-1}\rangle(z_l)$ the identical
-composition yields $\gamma_t(R)$.
+quantity it emits and fits is $\Delta\Sigma(R)$. The Buzzard reference
+configuration leaves `unity` at its default `F` and fits the physical
+composition.
 ```
 
 ## Pipeline boundary
@@ -288,7 +288,7 @@ CPU/GPU experiments, diagnostic backends, and examples — see the
 | Cluster counts | `NumCountsSel` | $N_{ij}[1]$ |
 | One-halo lensing | `Shear1hMisSel` (reference) / `Shear1hSel` (centered-only) | $N_{ij}[\gamma_t^{1h}](R)$ |
 | Selection-bias operators | `b_sel_marg`, `bsel` | $P_1$, $I_1$, $J$, and scale-dependent $b_{\rm sel}$ |
-| Projection lensing | `shear_prj` (`ShearPrjEvaluator`) | $\Sigma_{\rm prj}$, $\Delta\Sigma_{\rm prj}$, $\gamma_t^{\rm prj}$ |
+| Projection lensing | `shear_prj_frozen_physics` (`ShearPrjFrozenPhysics`; `ShearPrjEvaluator` is the validation backend) | $\Delta\Sigma_{\rm prj}$, $\gamma_t^{\rm prj}$ (aliased to `shear_prj/*`) |
 | Likelihood | `y3_buzzard/likelihood_cp.py` | final log-likelihood |
 
 ## Repository architecture
@@ -351,15 +351,16 @@ Shear1hMisSel  (or Shear1hSel)
             average_sigma_crit_inv/*; miscentering parameters (optional)
     writes: shear1hmissel/vals  (or shear1hsel/vals)
 
-shear_prj
+shear_prj_frozen_physics
     reads:  mass function; halo bias; nonlinear correlation function;
-            optical selection-bias products; projection kernel;
+            optical selection-bias plateaus; projection kernel;
             lensing geometry
-    writes: sigma_prj/*, dsigma_prj/*, shear_prj/*
+    writes: dsigma_prj_frozen_physics/*, shear_prj_frozen_physics/*,
+            shear_prj/* (alias)
 ```
 
-The detailed key names and units belong to the
-{doc}`module reference <modules/index>`.
+The detailed key names and units belong to the per-module pages linked
+from {doc}`running`.
 
 ## Terminology
 
@@ -378,18 +379,23 @@ To avoid ambiguity, the following terms are fixed here and used throughout.
 
 ## Status decisions
 
-The following decisions were fixed on 2026-08-10 and are reflected
-throughout this documentation:
+The following decisions are reflected throughout this documentation
+(updated 2026-08-11):
 
-1. **Canonical configuration**: `des-cluster-nersc
-   cosmosis-models/mock_mcmc_cp_camb.ini` @ `5055375`; the in-repo copy is
-   its smoke variant.
+1. **Canonical configuration**: `des-nersc-cluster-scripts
+   cosmosis-models/mock_mcmc_buzzard.ini` @ `9fd24dd` (branch
+   `polychord-widePlanck-logspace-ab`); `mock_mcmc_cp_camb.ini` is the
+   widePlanck self-closure variant ({doc}`variants`).
 2. **Reference one-halo branch**: `Shear1hMisSel` (miscentering-aware);
    `Shear1hSel` is the centered-only variant.
-3. **Naming**: the projection stage is called `shear_prj` (the DataBlock
-   output section); `red_shear_prj` is a legacy name for the same branch.
-4. **Data-vector length**: 12 number counts + 12 bins × 10 radii = 120
-   shear points (`likelihood_cp.py` `_SHEAR_N = 120`; older comments
-   quoting 180/15-radii are stale).
+3. **Reference projection stage**: `shear_prj_frozen_physics`
+   (`ShearPrjFrozenPhysics`), aliasing its outputs to `shear_prj/*`;
+   `ShearPrjEvaluator` is the full-fidelity validation backend, and
+   `red_shear_prj` is a legacy name for the branch.
+4. **Data-vector length**: 12 number counts + 12 bins × 15 radii = 180
+   shear points (`mock_dv_buzzard.npz`). The widePlanck self-closure
+   variant uses 10 radii (120 points), and the committed
+   `likelihood_cp.py` still hard-codes that layout — see
+   {doc}`observables/likelihood`.
 5. **Reduced shear**: retired/historical; tangential shear (or ΔΣ under
    the unity convention) is the primary observable.

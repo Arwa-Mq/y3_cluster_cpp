@@ -339,7 +339,7 @@ Hard-won conventions that every new integrand must respect:
 
 The equation → algorithm → code mapping for every production module —
 DataBlock inputs/outputs, ini knobs, source files, and classes — lives in
-the {doc}`module reference <../modules/index>`. The GPU (PAGANI) variants
+the per-module pages linked from {doc}`../running`. The GPU (PAGANI) variants
 are reference benchmarks only (see the adaptive-integration section
 above) and the historical GPU suites are catalogued in the
 {doc}`status appendix <../modules/historical>`.

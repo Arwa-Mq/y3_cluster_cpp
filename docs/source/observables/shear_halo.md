@@ -1,0 +1,102 @@
+# Shear1hMisSel — one-halo shear with miscentering
+
+`C++` · `y3_cluster_cpp` · `Cluster observable`
+
+Computes the population-integrated one-halo tangential shear
+$N_i[\gamma_t^{1h,\rm full}](R)$ — the centred + miscentred NFW profile
+weighted by the same halo population as the number counts. The likelihood
+divides by `numcountssel/vals` to form the stacked per-cluster profile and
+adds the projection term.
+
+## Script
+
+- Model: [`src/models/n_operator_sel_gl_t.hh`](https://github.com/estevesjh/y3_cluster_cpp/blob/d7feb7504ed5dfcad84f99a1791af8a55c858aa0/src/models/n_operator_sel_gl_t.hh)
+  (`y3_cluster::Shear1hMisSelGL`, sharing `SelGLCore` with
+  `NumCountsSelGL`) +
+  [`src/modules/num_counts_sel/lensing_weights.hh`](https://github.com/estevesjh/y3_cluster_cpp/blob/d7feb7504ed5dfcad84f99a1791af8a55c858aa0/src/modules/num_counts_sel/lensing_weights.hh).
+- Module driver: [`src/modules/num_counts_sel/Shear1hMis.cc`](https://github.com/estevesjh/y3_cluster_cpp/blob/d7feb7504ed5dfcad84f99a1791af8a55c858aa0/src/modules/num_counts_sel/Shear1hMis.cc)
+  (`DEFINE_COSMOSIS_SCALAR_EVALUATOR_MODULE`).
+- Compiled library loaded by CosmoSIS:
+  `${Y3_CLUSTER_CPP_DIR}/release-build/src/modules/num_counts_sel/Shear1hMisSel.so`.
+- Disk tables: `data/nfw_off_center/*gamma*` — $1000 \times 1000$ log-log
+  grids of the gamma-kernel miscentred NFW in
+  $(R/r_s, R_{\rm mis}/r_s)$, loaded once at module construction.
+
+## CosmoSIS setup
+
+```ini
+[Shear1hMisSel]
+file = ${Y3_CLUSTER_CPP_DIR}/release-build/src/modules/num_counts_sel/Shear1hMisSel.so
+algorithm = cuhre
+use_cartesian_product = T
+eps_rel = 1.5e-3
+eps_abs = 1.0e-12
+max_eval = 1000000
+bin_index = 0 1 2 3 4 5 6 7 8 9 10 11
+r_perp = 0.0426 0.0669 0.1045 0.1652 0.2607 0.4117 0.6505 1.0257 1.6181 2.5537 4.0265 6.3490 10.0107 15.7832 24.8771
+zt_low  = 0.05
+zt_high = 0.80
+lnm_low  = 29.9336
+lnm_high = 36.7300
+```
+
+- Ordering: after `sel_function`, `halo_model` (with
+  `compute_lensing_1h = T` — it reads the NFW $\Delta\Sigma$ table),
+  `average_sigma_crit_inv`, `MfTinker`, `cp_camb`.
+- Grid: 12 bins × 15 radii = **180** points, matching the Y1 WL covariance
+  layout (`wl_cov.txt`) asserted by the likelihood.
+- The `algorithm`/`eps_*`/`max_eval` Cuhre knobs are legacy and ignored by
+  the fixed-GL evaluator.
+
+## Configuration options
+
+| Option | Meaning | Units | Reference value |
+|---|---|---|---|
+| `bin_index` × `r_perp` | Cartesian wall grid (bin slow, $R$ fast) | $R$: cMpc/$h$ | 12 × 15 |
+| `zt_low`, `zt_high` | true-redshift limits | — | 0.05, 0.80 |
+| `lnm_low`, `lnm_high` | mass limits | $\ln(M_\odot/h)$ | 29.9336, 36.7300 |
+| `n_lnm`, `n_z` | GL nodes | — | 96, 64 (defaults) |
+| `lob_centers` | richness-bin centres driving $R_\lambda$ | — | 25 37.5 52.5 130 (default) |
+| `method` | `exact` = full GL mass sum; `idea2` = 2nd-order moment expansion | — | `exact` (default) |
+
+## DataBlock inputs
+
+Everything {doc}`NumCountsSel <number_counts>` reads, plus:
+
+| DataBlock input | Meaning | Units / shape | Produced by |
+|---|---|---|---|
+| `haloModel/{r_sigma, lnM, dSigma_nfw}` | centred NFW $\Delta\Sigma(R, M)$ spline | cMpc/$h$; `(100, 128)` | `halo_model` (`compute_lensing_1h = T`) |
+| `average_sigma_crit_inv/{zlense, sci_average}` | $\langle\Sigma_{\rm crit}^{-1}\rangle(z)$, folded into the $z$ weight | `(50,)` | `average_sigma_crit_inv` |
+| `miscentering/f_mis`, `miscentering/tau_mis` | miscentred fraction and offset scale | scalars | sampler if declared; in-code defaults 0.22 / 0.17 |
+| `cosmological_parameters/omega_m` | $\bar\rho_m$ multiplier of the miscentred table | scalar | `consistency` |
+
+## DataBlock outputs
+
+| DataBlock output | Meaning | Units / shape | Consumed by |
+|---|---|---|---|
+| `shear1hmissel/vals` | $N_i[\gamma_t^{1h,\rm full}](R)$, bin slow / radius fast | `(180,)` | `likelihoods` |
+
+## Science and numerics
+
+The population operator with the miscentering-mixture shear weight
+(DES-Y3 redMaPPer calibration, Kelly et al. 2023 gamma offset kernel):
+
+$$\gamma_t^{1h,\rm full}(R; M, z) =
+\Big[(1 - f_{\rm mis})\,\Delta\Sigma_{\rm NFW}(R, M)
++ f_{\rm mis}\,\Delta\Sigma_{\rm mis}\big(R, M;\, \tau_{\rm mis} R_\lambda\big)\Big]\,
+\langle\Sigma_{\rm crit}^{-1}\rangle(z),$$
+
+with $R_\lambda = (\lambda/100)^{0.2}\,h^{-1}$Mpc resolved per richness
+bin (`bin_index % 4`). The profile is $z$-free, so the $z$-marginalised
+weight $W_{ij}(\ln M)$ — including the $\Sigma_{\rm crit}^{-1}$ factor —
+is built once per sample; each of the 180 grid points is one 1-D GL mass
+sum ($\sim 16\times$ faster than the retired per-(bin, $R$) Cuhre path,
+deterministic cost). Both mixture pieces are linear in $\Delta\Sigma$, so
+the one-halo + projection sum in the likelihood is exact (tangential
+shear, not reduced shear — see {doc}`../systematics/index`).
+
+Setting `miscentering/f_mis = 0` recovers the centred-only `Shear1hSel`
+result ({doc}`../variants`). Radial-factorisation error budget:
+[shear1h_radial_factorization.tex](https://github.com/estevesjh/y3_cluster_cpp/blob/master/docs/shear1h_radial_factorization.tex).
+Model derivation: {doc}`../science/index`; miscentering model:
+{doc}`../systematics/index`.
