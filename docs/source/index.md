@@ -52,16 +52,19 @@ validation/index
 
 The LaTeX documents below are the archival, paper-grade record from which
 much of this site is ported. Each ported chapter cites its source; where
-this site and a PDF disagree, the site is the living reference.
+this site and a PDF disagree, the site is the living reference. The
+sources live under `docs/` (PDFs are built locally with `pdflatex`; they
+are deliberately not tracked in git):
 
-- {download}`pipeline_modules.pdf <../pipeline_modules.pdf>` — wired-pipeline
-  algorithms, DataBlock contracts, timing audit, quadrature knob cheat-sheet.
-- {download}`projection_lensing_paper.pdf <../projection_lensing_paper.pdf>` —
-  the optical-projection lensing model.
-- {download}`emulator_validation.pdf <../emulator_validation.pdf>` —
-  validation of the `cp_camb` linear-$P(k)$ emulator against CAMB.
-- {download}`shear1h_radial_factorization.pdf <../shear1h_radial_factorization.pdf>` —
-  factorisation strategies for the one-halo shear mass integral.
+- [pipeline_modules.tex](https://github.com/estevesjh/y3_cluster_cpp/blob/master/docs/pipeline_modules.tex)
+  — wired-pipeline algorithms, DataBlock contracts, timing audit,
+  quadrature knob cheat-sheet.
+- [projection_lensing_paper.tex](https://github.com/estevesjh/y3_cluster_cpp/blob/master/docs/projection_lensing_paper.tex)
+  — the optical-projection lensing model.
+- [emulator_validation.tex](https://github.com/estevesjh/y3_cluster_cpp/blob/master/docs/emulator_validation.tex)
+  — validation of the `cp_camb` linear-$P(k)$ emulator against CAMB.
+- [shear1h_radial_factorization.tex](https://github.com/estevesjh/y3_cluster_cpp/blob/master/docs/shear1h_radial_factorization.tex)
+  — factorisation strategies for the one-halo shear mass integral.
 
 The selection-model derivations live in the `RichnessSelection` repository
 (`docs/richness_selection_function.tex`, `docs/richness_selection.tex`,
