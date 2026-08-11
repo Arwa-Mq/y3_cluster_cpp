@@ -1,10 +1,10 @@
-# Observables: Forward Model
+# Mathematical Framework
 
-This part documents the mathematical definition of each pipeline
-observable and of the selection functions that enter them. Definitions are
-implementation-independent; the numerical treatment lives in
-{doc}`../numerics/index` and the code mapping in the per-module pages
-linked from {doc}`../running`.
+The mathematical definition of each pipeline observable and of the
+selection functions that enter them, in the nomenclature of the
+optical-selection paper. Definitions are implementation-independent; the
+numerical treatment lives in {doc}`../numerics/index` and the code
+mapping in the per-module pages linked from {doc}`../running`.
 
 The main published reference for the forward model — cluster number
 counts and population-averaged lensing with miscentering, and the
@@ -49,10 +49,11 @@ S_{ij}(\ln M, z) = S_i(\ln M, z)\cdot \mathcal S_j(z)
    P_{\rm HOD}(\lambda^{\rm tr} \,|\, M, z)\Big]\cdot \mathcal S_j(z),
 $$
 
-with $\mathcal S_i$ the richness-bin kernel (a closed-form CDF difference of the
-Costanzi EMG $P(\lambda^{\rm ob}|\lambda^{\rm tr}, z)$ — see
-[Selection functions](#selection-functions)) and $\mathcal S_j$ a Gaussian
-photo-$z$ CDF difference. The weight $f$ selects the observable:
+with $\mathcal S_i$ the observed-richness kernel (a closed-form CDF
+difference of the Costanzi projection kernel
+$P(\lambda^{\rm ob}|\lambda^{\rm tr}, z)$ — see
+[Selection functions](#selection-functions)) and $\mathcal S_j$ the
+observed-redshift kernel (a Gaussian CDF difference). The weight $f$ selects the observable:
 
 | Weight $f$ | Module | Observable built |
 |---|---|---|
@@ -303,7 +304,7 @@ grows $\sim 15\%$ going $R_{\max}=30\to 60\,h^{-1}\mathrm{Mpc}$ while
 cl+LSS changes $<1\%$). The pipeline therefore returns the cl+LSS piece by
 default for both observables.
 
-#### $\Delta\Sigma_{\rm prj}$: derivation highlights
+#### $\Delta\Sigma_{\rm prj}$ and the integration limit
 
 The lensing observable is the excess surface density,
 
@@ -315,76 +316,25 @@ $$
 \frac{2}{R'^{\,2}}\int_0^{R'}\! s\,\langle\Sigma^{\rm prj}(s)\rangle\,ds .
 $$
 
-Both the radial average and the subtraction act only on the radial
-argument $R'$, while the outer $(\theta,z,M)$ integrals are
-$R'$-independent — so the excess functional commutes with them:
-
-$$
-\begin{aligned}
-\langle\Delta\Sigma^{\rm prj}_{\rm cl+LSS}(R'\mid\lambda^{\rm ob},z^{\rm ob})\rangle
-&= \int d\theta\sin\theta\int dz\,\frac{dV}{dz\,d\Omega}\int dM\,n(M,z) \\
-&\quad\times
-b(M,z)\,b_{\rm sel}(\theta)\,\xi_{\rm NL}(r,z^{\rm ob})\,
-\Delta\Sigma_{\rm mis}\bigl(R'\mid M,z,\theta\,\chi(z_{\rm cls})\bigr),
-\end{aligned}
-$$
-
-where the only change from the $\Sigma^{\rm prj}$ machinery is the kernel
-swap
-
-$$
-\Sigma_{\rm mis}(R'\mid M,z,R_{\rm mis})
-\;\longrightarrow\;
-\Delta\Sigma_{\rm mis}(R'\mid M,z,R_{\rm mis})
-\equiv \bar\Sigma_{\rm mis}(<R'\mid M,z,R_{\rm mis})
-- \Sigma_{\rm mis}(R'\mid M,z,R_{\rm mis}).
-$$
-
-The split-at-breakpoints $\theta$-grid (with per-$R'$ nodes at
-$\theta_{R'} = R'/D_A(z^{\rm ob})$), the ring $\cup$ outer-fg $\cup$
-outer-bg $z$-grid, the exact chord, the exclusion cut, and the
-$b_{\rm sel}$ evaluation are all preserved; $\Delta\Sigma_{\rm mis}$ is
-just a different lookup against the offset-NFW tables.
-
-#### Adaptive $\theta_{\max}$
-
-For $\langle\Sigma^{\rm prj}\rangle$ the legacy truncation is
-$R_{\max}=30\,h^{-1}\mathrm{Mpc}$, i.e.
-$\theta_{\max}=R_{\max}/\chi(z_{\rm cls})$, matching the hard truncation
-of the reference `twoD_prj_NFW` notebook. For
-$\langle\Delta\Sigma^{\rm prj}\rangle$ the requirement is strictly weaker,
-for two reasons: (i) the rnd piece — the long $\theta$-plateau — is
-dropped by design; (ii) the cl+LSS $\theta$-integrand is itself bounded in
-$\theta$, because $\Delta\Sigma_{\rm mis}(R'\mid R_{\rm mis})$ has compact
-support around $R_{\rm mis}\sim R'$ and decays in both limits
-($R_{\rm mis}\ll R'$ gives
-$\Delta\Sigma_{\rm mis}\to 2\pi\Delta\Sigma_{\rm NFW}(R')$;
-$R_{\rm mis}\gg R'$ gives $\Sigma_{\rm mis}\to 2\pi\Sigma_{\rm NFW}(R_{\rm mis})$,
-$R'$-independent, so $\Delta\Sigma_{\rm mis}\to 0$). The remaining
-constraint is only to resolve the support of $\Delta\Sigma_{\rm mis}$ at
-the largest measurement radius $R'_{\max}$:
+The excess functional acts only on the radial argument and therefore
+commutes with the outer $(\theta, z, M)$ integrals: the
+$\Delta\Sigma^{\rm prj}$ prediction is the $\Sigma^{\rm prj}$ machinery
+with the kernel swap
+$\Sigma_{\rm mis} \to \Delta\Sigma_{\rm mis} \equiv
+\bar\Sigma_{\rm mis}(<R') - \Sigma_{\rm mis}(R')$ — a different lookup
+against the same offset-NFW tables. Because
+$\Delta\Sigma_{\rm mis}(R' \mid R_{\rm mis})$ has compact support around
+$R_{\rm mis} \sim R'$, the line-of-sight truncation is adaptive,
 
 $$
 \theta_{\max}^{\Delta\Sigma}
 = \frac{C\,R'_{\max}}{\chi(z_{\rm cls})},
-\qquad C\simeq 3,\quad
-R'_{\max}\equiv\max_i R'_i ,
+\qquad C\simeq 3
+\ \ (\text{not below} \sim 2),
 $$
 
-replacing the fixed $R_{\max}=30\,h^{-1}\mathrm{Mpc}$ truncation. For
-$R'_{\max}=10\,h^{-1}\mathrm{Mpc}$ at $z_{\rm cls}=0.5$ this coincides
-numerically with the legacy default; for $R'_{\max}=3\,h^{-1}\mathrm{Mpc}$
-it drops to $\sim 9/\chi(z_{\rm cls})$, a $\sim 3\times$ cheaper
-$\theta$-integral. Do not push $C$ below $\sim 2$: the ring peak of
-$\Delta\Sigma_{\rm mis}$ at $R_{\rm mis}=R'_{\max}$ extends modestly beyond
-$\theta_{R'_{\max}}$ because the NFW neighbour has finite
-$R_s\sim 0.3\,h^{-1}\mathrm{Mpc}$. Note that $\xi_{\rm NL}$-decay is *not*
-the binding constraint: at large $\theta$ the $\Delta\Sigma_{\rm mis}$
-kernel is what zeros the integrand, so taking $\theta_{\max}$ past a few
-$\times\,\theta_{R'_{\max}}$ is wasted work.
-
-*Source: `sigma_prj_refactor.md` §1–6; `delta_sigma_prj_derivation.tex`
-§Setup, §The target observable, §Choosing θ_max.*
+replacing the fixed $R_{\max} = 30\,h^{-1}$Mpc cut. Full derivation:
+`delta_sigma_prj_derivation.tex` in `RichnessSelection`.
 
 ### The shear composition
 
@@ -813,9 +763,9 @@ all depend on $(\lambda^{\mathrm{tr}}, z)$ and are calibrated empirically
 *Source: `RichnessSelection/docs/richness_selection_function.tex`
 §Closed-form of the observed richness kernel with projection effects.*
 
-### The richness-bin selection kernel
+### The observed-richness kernel
 
-This section defines the closed-form bin-integrated kernel
+This section defines the closed-form observed-richness kernel
 $\mathcal S_i(\lambda^{\mathrm{tr}}, z)$ — the probability, at fixed
 $\lambda^{\mathrm{tr}}$, of being observed inside the richness bin
 $\Delta\lambda_i \equiv [\lambda_i^{\min}, \lambda_i^{\max}]$ — and the
@@ -889,53 +839,11 @@ F_{\mathrm{EMG}}(x; \mu, \sigma, \tau)
 $$
 
 The first term is the Gaussian CDF at $x$; the second encodes the
-correction from the exponential projection tail.
-
-**Derivation sketch.** Let $X = G + E$ with $G \sim \mathcal N(\mu, \sigma^2)$
-and $E \sim \mathrm{Exp}(\tau)$ independent; the density of $X$ is exactly
-the EMG component of the projection kernel. Conditioning on $G = g$,
-
-$$
-F_{\mathrm{EMG}}(x)
-=
-\int_{-\infty}^{\infty}
-P(E \le x-g)\,
-\mathcal N(g; \mu, \sigma)\,dg,
-$$
-
-and because $E \ge 0$, $P(E \le x-g) = 1 - e^{-\tau(x-g)}$ for $g \le x$
-and $0$ otherwise, so
-
-$$
-F_{\mathrm{EMG}}(x)
-=
-\int_{-\infty}^{x}\mathcal N(g; \mu, \sigma)\,dg
--
-\int_{-\infty}^{x} e^{-\tau(x-g)}\,\mathcal N(g; \mu, \sigma)\,dg.
-$$
-
-The first integral is $\Phi\!\left((x-\mu)/\sigma\right)$. For the second,
-pull out $e^{-\tau x}$ and complete the square in the exponent,
-
-$$
-\tau g - \frac{(g-\mu)^2}{2\sigma^2}
-=
--\frac{(g-\mu-\tau\sigma^2)^2}{2\sigma^2}
-+
-\tau\mu + \frac{1}{2}\tau^2\sigma^2,
-$$
-
-which is again a Gaussian in $g$ with shifted mean $\mu + \tau\sigma^2$
-plus a constant. Absorbing the constant and re-integrating gives
-
-$$
-e^{-\tau x}\int_{-\infty}^{x} e^{\tau g}\,\mathcal N(g; \mu, \sigma)\,dg
-=
-\exp\!\left[-\tau(x-\mu)+\frac{1}{2}\tau^2\sigma^2\right]
-\Phi\!\left(\frac{x-\mu}{\sigma}-\tau\sigma\right),
-$$
-
-which reproduces the closed-form $F_{\mathrm{EMG}}$ above.
+correction from the exponential projection tail. (Derivation — write
+$X = G + E$ with $G \sim \mathcal N(\mu, \sigma^2)$,
+$E \sim \mathrm{Exp}(\tau)$, condition on $G$, and complete the square
+— in the appendix of the optical-selection paper and
+`RichnessSelection/docs/richness_selection_function.tex`.)
 
 #### Assembled closed form
 

@@ -11,6 +11,13 @@ reads and writes, and which module consumes its outputs.
 
 ```{toctree}
 :maxdepth: 1
+:caption: Mathematical framework
+
+science/index
+```
+
+```{toctree}
+:maxdepth: 1
 :caption: Getting started
 
 running
@@ -71,7 +78,6 @@ modules/historical
 :caption: Background chapters
 
 overview
-science/index
 systematics/index
 numerics/index
 data/index
