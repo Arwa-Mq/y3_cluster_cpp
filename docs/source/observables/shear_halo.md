@@ -1,6 +1,6 @@
-# Shear1hMisSel — one-halo shear with miscentering
+# One-Halo Lensing
 
-`C++` · `y3_cluster_cpp` · `Cluster observable`
+`C++` · `y3_cluster_cpp` · `Cluster observable` · module `Shear1hMisSel`
 
 Computes the population-integrated one-halo tangential shear
 $N_i[\gamma_t^{1h,\rm full}](R)$ — the centred + miscentred NFW profile
@@ -94,7 +94,11 @@ $$\gamma_t^{1h,\rm full}(R; M, z) =
 \langle\Sigma_{\rm crit}^{-1}\rangle(z),$$
 
 with $R_\lambda = (\lambda/100)^{0.2}\,h^{-1}$Mpc resolved per richness
-bin (`bin_index % 4`). The profile is $z$-free, so the $z$-marginalised
+bin (`bin_index % 4`). This is **target-cluster miscentering** — the
+assigned redMaPPer centre offset from the true halo centre, with
+$(f_{\rm mis}, \tau_{\rm mis})$ as nuisance parameters — distinct from
+the parameter-free neighbouring-halo offset inside the two-halo term
+({doc}`shear_projection`). The profile is $z$-free, so the $z$-marginalised
 weight $W_{ij}(\ln M)$ — including the $\Sigma_{\rm crit}^{-1}$ factor —
 is built once per sample; each of the 180 grid points is one 1-D GL mass
 sum ($\sim 16\times$ faster than the retired per-(bin, $R$) Cuhre path,

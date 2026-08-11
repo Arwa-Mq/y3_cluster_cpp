@@ -80,7 +80,12 @@ where $K_i$ differences the EMG CDF of
 $P(\lambda^{\rm ob}\mid\lambda^{\rm tr}, z)$ at the bin edges, $K_j$ is a
 Gaussian photo-$z$ bin kernel of width `sigma_z`, and $P_{\rm HOD}$ is the
 shifted-Poisson richness–mass relation — both defined in
-{doc}`../observables/richness_mass`. The $\lambda^{\rm tr}$ sum uses $N_q$
+{doc}`../observables/richness_mass`. In the paper's language: $K_i$ is
+the **observed-richness kernel** $\mathcal{S}_i$, $K_j$ the
+**observed-redshift kernel** $\mathcal{S}_j$, and the
+$\lambda^{\rm tr}$-integrated product is the **richness selection
+function** $S_i(M, z^{\rm tr})$ — together the redMaPPer selection
+function $\mathcal{S}_{ij}$. The $\lambda^{\rm tr}$ sum uses $N_q$
 GL nodes bracketed at $\mu_{\rm eff} \pm L\sigma_{\rm eff}$; the EMG CDF is
 evaluated via `erfcx` at the 5 unique bin edges {20, 30, 45, 60, 200} only.
 The Python kernels match the C++ models

@@ -59,6 +59,29 @@ HOD + EMG richness kernels behind the `sel_function` tabulation, the
 P[X] operators (`b_sel_marg` → `bsel`), and the
 Sigma_prj/DSigma_prj/shear_prj projection branch.
 
+### Pipeline language (paper reframing)
+
+The user is reframing the pipeline terminology in the paper draft at
+`/Users/jesteves/Documents/Dev/des-y1-cluster-optical-selection/main.tex`
+("Impact of Galaxy Cluster Optical Selection on DES Y1 Cosmology").
+Docs and prose should track the paper's names. The pipeline code itself
+(module/section/variable names) is planned to migrate to the same
+language; until that lands, DataBlock/code key names stay as-is and the
+docs carry both. Mapping:
+
+- Σ^prj is "the two-halo term sourced by correlated line-of-sight
+  structure" with the **selection-affected bias** b_sel(θ); the
+  conventional two-halo term is its unselected-bias limit.
+- code `b_eff` = paper **b_halo**; code `P1` = paper **𝒫[1]**;
+  I₂ ≡ 𝒫[b ξ_NL], I₁ ≡ 𝒫[b ξ_NL σ(θ)].
+- S_i(M, z^tr) = **richness selection function**; 𝒮_i =
+  **observed-richness kernel**; 𝒮_j = **observed-redshift kernel**.
+- **Target-cluster miscentering** (gamma kernel, f_mis/tau_mis) vs
+  **neighbouring-halo miscentering** (single-offset Σ_mis inside the
+  two-halo term, no free parameters).
+- R_excl is a line-of-sight **slab exclusion**; the EMG kernel is the
+  **Costanzi projection kernel**.
+
 ## Build
 
 The project **only builds on Perlmutter GPU compute nodes with a specific non-default

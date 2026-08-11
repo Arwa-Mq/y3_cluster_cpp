@@ -1,6 +1,6 @@
-# likelihoods — Gaussian likelihood
+# Likelihood
 
-`Python` · `y3_cluster_cpp` (`y3_buzzard/`) · `Likelihood`
+`Python` · `y3_cluster_cpp` (`y3_buzzard/`) · `Likelihood` · module `likelihoods`
 
 Assembles the theory vector from the three observable modules, compares
 it with the data vector and inverse covariance from an `.npz` file, and

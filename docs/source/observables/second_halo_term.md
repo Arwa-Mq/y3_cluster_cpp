@@ -1,12 +1,16 @@
-# Second halo term (conventional two-halo lensing)
+# Second Halo Term
 
 `Python` (producer) · `y3_cluster_cpp` (`y3_buzzard/`) · `Lensing`
 
 The conventional two-halo term — correlated matter around the cluster,
-scaled by its halo bias — is the standard alternative to the
-projection-selection term used by the reference pipeline. Its ingredients
-are computed by the {doc}`halo_model <../cosmology/halo_model>` module,
-gated behind `compute_lensing_2h`.
+scaled by its plain halo bias — is, in the paper's language, the
+**unselected-bias limit** of the selection-affected two-halo term
+$\Sigma^{\rm prj}$ used by the reference pipeline
+({doc}`shear_projection`): replace $b(M,z)\,b_{\rm sel}(\theta)$ by the
+halo-bias aggregate $b_{\rm halo}$ and drop the selection modulation.
+Its ingredients are computed by the
+{doc}`halo_model <../cosmology/halo_model>` module, gated behind
+`compute_lensing_2h`.
 
 ```{admonition} Not active in the reference pipeline
 :class: important

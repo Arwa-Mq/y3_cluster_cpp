@@ -89,7 +89,12 @@ I_1 = \int \mathcal{W}\, b(M,z)\,\xi_{\rm NL}(|\Delta\chi|, z^{\rm ob})\,
 J   &= \int \mathcal{W}\, b\,\xi_{\rm NL}\,\big(1 - \sigma(\theta)\big)\, f_A,
 \end{aligned}$$
 
-over $(z, \ln M, \lambda^{\rm tr}, \theta)$, with population weight
+over $(z, \ln M, \lambda^{\rm tr}, \theta)$. In the paper's notation
+these are specialisations of the projection-average operator
+$\mathcal{P}[X]$: $P_1 = \mathcal{P}[1]$,
+$I_1 = \mathcal{P}[b\,\xi_{\rm NL}\,\sigma(\theta)]$, and
+$J = I_2 - I_1$ with $I_2 = \mathcal{P}[b\,\xi_{\rm NL}]$. The
+population weight is
 $\mathcal{W} \propto (dV/d\Omega\,dz)\, (dn/d\ln M)\,
 P_{\rm HOD}(\lambda^{\rm tr}|M,z)\,\lambda^{\rm tr}\, 2\pi\sin\theta$,
 line-of-sight exclusion $\theta > \theta_{\rm excl}(z)$, and sigmoid
@@ -164,7 +169,7 @@ ltr_hi_factor  = 3.0
 |---|---|---|---|
 | `b_sel_marginalised/b_small` | small-scale plateau $B_{\rm small} = \langle b_{\rm zero}\rangle_{\lambda^{\rm tr}}$ | `(3, 4)` | `shear_prj_frozen_physics` |
 | `b_sel_marginalised/b_large` | large-scale plateau $B_{\rm large} = \langle b_\infty\rangle_{\lambda^{\rm tr}}$ | `(3, 4)` | `shear_prj_frozen_physics` |
-| `b_sel_marginalised/b_eff` | mass-averaged effective bias per bin | `(3, 4)` | diagnostics |
+| `b_sel_marginalised/b_eff` | mass-averaged halo-bias aggregate per bin — the paper's $b_{\rm halo}$ (unselected bias) | `(3, 4)` | diagnostics |
 | `b_sel_marginalised/{lob, zob, theta, vals}` | backward-compatible $b_{\rm sel}(\theta)$ tabulation | `(4,)`, `(3,)`, `(32,)`, `(4, 3, 32)` | legacy consumers |
 
 ### Science and numerics

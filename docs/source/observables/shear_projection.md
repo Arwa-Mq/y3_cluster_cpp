@@ -1,11 +1,13 @@
-# shear_prj_frozen_physics — projection shear
+# Shear Projection
 
-`C++` · `y3_cluster_cpp` · `Cluster observable`
+`C++` · `y3_cluster_cpp` · `Cluster observable` · module `shear_prj_frozen_physics`
 
-Computes the projection lensing term: the surface density and tangential
-shear contributed by foreground/background haloes along the cluster line
-of sight, modulated by the optical selection bias. This term replaces the
-conventional two-halo term in the reference shear composition
+Computes $\Sigma^{\rm prj}$ — in the paper's language, **the two-halo
+term sourced by correlated line-of-sight structure**, carrying the
+selection-affected bias $b_{\rm sel}(\theta)$: the surface density and
+tangential shear contributed by foreground/background haloes whose
+presence also boosts the optical selection. It replaces the conventional
+(unselected-bias) two-halo term in the reference shear composition
 $\gamma_t^{\rm theory} = \langle\gamma_t^{1h}\rangle + \gamma_t^{\rm prj}$.
 
 ## Script
@@ -135,7 +137,13 @@ w_z(z, z^{\rm ob})\, \frac{dV}{d\Omega\,dz}\, n(M, z)\,
 with the parabolic photo-$z$ kernel $w_z$, the analytic
 $b_{\rm sel}(\theta) = B_{\rm small} + (B_{\rm large} - B_{\rm small})\,
 \sigma(\theta)$ from the `bsel` plateaus, and the single-offset miscentred
-NFW (the offset *is* the $\theta$ variable). The $\theta$ grid is log-GL
+NFW — **neighbouring-halo miscentering** in the paper's language: the
+"offset" is the projected halo–halo separation $\theta D_A(z^{\rm ob})$
+itself, a geometric ingredient with no free nuisance parameters (unlike
+the target-cluster miscentering of {doc}`shear_halo`). The exclusion
+$\theta > \theta_{\rm excl}(z)$ is a line-of-sight **slab** cut at the
+redMaPPer aperture $R_\lambda(1+z^{\rm ob})$, not a 3-D ball. The
+$\theta$ grid is log-GL
 on segments split at
 $\{\theta_{\rm lo}, \theta_{\rm excl,o}, \theta_R(R_k), \theta_\lambda,
 2\theta_\lambda, \theta_{\max}\}$; the $z$ grid is a ring around
