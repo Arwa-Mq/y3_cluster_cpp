@@ -71,7 +71,14 @@ ini knob: a CosmoSIS `[DEFAULT]` block would propagate an
 
 ## Science and numerics
 
-The $f = 1$ instance of the population operator
+The number-count forward model follows
+[DES Cluster et al. 2023](https://ui.adsabs.harvard.edu/abs/2023arXiv230906593A/abstract)
+(arXiv:[2309.06593](https://arxiv.org/abs/2309.06593)) — the reference
+paper for this software suite: cluster counts predicted per
+$(\lambda^{\rm ob}, z^{\rm ob})$ bin from the halo mass function, the
+survey area, the volume element, and the richness–mass and photo-$z$
+kernels (its Eq. 1). This module is the $f = 1$ instance of the
+population operator
 
 $$N_i[f] = \int d\ln M \int dz\;
 \Omega(z)\,\frac{dV}{d\Omega\,dz}\,\frac{dn}{d\ln M}(M,z)\,

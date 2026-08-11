@@ -108,6 +108,14 @@ pipeline: both write `shear_prj/*` and the later module wins.
 
 ## Science and numerics
 
+The population-integral framework — bin-averaged lensing predicted
+jointly with the number counts from the same halo population and
+selection kernels — is that of
+[DES Cluster et al. 2023](https://ui.adsabs.harvard.edu/abs/2023arXiv230906593A/abstract)
+(arXiv:[2309.06593](https://arxiv.org/abs/2309.06593)), the reference
+paper for this software suite; the projection-selection extension
+documented here is the Costanzi-2026 model built on top of it.
+
 Per $(\lambda^{\rm ob}, z^{\rm ob}, R)$ wall point, the projected surface
 density of line-of-sight structure:
 

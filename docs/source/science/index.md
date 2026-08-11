@@ -6,7 +6,13 @@ implementation-independent; the numerical treatment lives in
 {doc}`../numerics/index` and the code mapping in the per-module pages
 linked from {doc}`../running`.
 
-Source material: `RichnessSelection/docs/richness_selection_function.tex`
+The main published reference for the forward model — cluster number
+counts and population-averaged lensing with miscentering, and the
+CosmoSIS software framework implementing them — is
+[DES Cluster et al. 2023](https://ui.adsabs.harvard.edu/abs/2023arXiv230906593A/abstract)
+(arXiv:[2309.06593](https://arxiv.org/abs/2309.06593)).
+
+Further source material: `RichnessSelection/docs/richness_selection_function.tex`
 (selection functions and richness–mass models),
 `RichnessSelection/docs/richness_selection.tex` and
 `delta_sigma_prj_derivation.tex` (projection lensing),

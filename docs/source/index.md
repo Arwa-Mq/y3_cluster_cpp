@@ -72,6 +72,14 @@ validation/index
 cosmosis/index
 ```
 
+## References
+
+The main published reference for the pipeline — the cluster
+number-count and population-averaged lensing forward model and the
+CosmoSIS/CUBA software framework — is
+[DES Cluster et al. 2023](https://ui.adsabs.harvard.edu/abs/2023arXiv230906593A/abstract)
+(arXiv:[2309.06593](https://arxiv.org/abs/2309.06593)).
+
 ## Archival documents
 
 The LaTeX documents below are the archival, paper-grade record from which

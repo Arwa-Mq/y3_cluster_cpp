@@ -78,8 +78,15 @@ Everything {doc}`NumCountsSel <number_counts>` reads, plus:
 
 ## Science and numerics
 
-The population operator with the miscentering-mixture shear weight
-(DES-Y3 redMaPPer calibration, Kelly et al. 2023 gamma offset kernel):
+The count-weighted lensing operator
+$\langle N\Sigma\rangle = f_{\rm cen}\langle N\Sigma_{\rm cen}\rangle +
+(1 - f_{\rm cen})\langle N\Sigma_{\rm mis}\rangle$ and its miscentering
+treatment follow
+[DES Cluster et al. 2023](https://ui.adsabs.harvard.edu/abs/2023arXiv230906593A/abstract)
+(arXiv:[2309.06593](https://arxiv.org/abs/2309.06593)), the reference
+paper for this software suite. This module evaluates it with the
+miscentering-mixture shear weight (DES-Y3 redMaPPer calibration,
+Kelly et al. 2023 gamma offset kernel):
 
 $$\gamma_t^{1h,\rm full}(R; M, z) =
 \Big[(1 - f_{\rm mis})\,\Delta\Sigma_{\rm NFW}(R, M)

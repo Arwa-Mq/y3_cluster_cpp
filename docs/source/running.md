@@ -7,6 +7,13 @@ in the **des-nersc-cluster-scripts** repository
 convergence-test pipeline, fitting 12 number counts and 180 tangential-shear
 points against the Buzzard simulation data vector.
 
+The software suite this pipeline is built from — the CosmoSIS module
+pattern, the model/integrand separation, and the number-count and
+population-averaged lensing forward model — is described in
+[DES Cluster et al. 2023](https://ui.adsabs.harvard.edu/abs/2023arXiv230906593A/abstract)
+(arXiv:[2309.06593](https://arxiv.org/abs/2309.06593)), the main
+reference for this documentation.
+
 ## The pipeline
 
 ```ini
