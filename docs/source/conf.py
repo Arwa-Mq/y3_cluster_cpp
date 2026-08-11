@@ -47,10 +47,10 @@ html_theme_options = {
     "logo_width": 59,
     # Base URL for the per-page "Edit on GitHub" button (the theme's
     # default points at its own repo, so set it explicitly).
-    "github_url": "https://github.com/marcpaterno/y3_cluster_cpp/blob/master/docs/source/",
+    "github_url": "https://github.com/estevesjh/y3_cluster_cpp/blob/master/docs/source/",
     "footer_links": ",".join(
         [
-            "Repository|https://github.com/marcpaterno/y3_cluster_cpp",
+            "Repository|https://github.com/estevesjh/y3_cluster_cpp",
             "Building the pipeline|installation.html",
         ]
     ),
