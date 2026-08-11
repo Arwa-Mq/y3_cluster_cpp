@@ -29,27 +29,7 @@ $1h{+}2h$ composition is retained as a comparison variant — see
   (class `ct_2hTerm`, driving the `cluster_toolkit`
   $P \to \xi \to \Sigma \to \Delta\Sigma$ chain).
 
-## CosmoSIS setup
-
-Enable inside the `[halo_model]` section (everything else as in the
-reference — see {doc}`../cosmology/halo_model`):
-
-```ini
-[halo_model]
-compute_lensing_1h = T
-compute_lensing_2h = T   ; reference run sets F
-```
-
-## DataBlock outputs (when enabled)
-
-| DataBlock output | Meaning | Units / shape | Consumed by |
-|---|---|---|---|
-| `haloModel/Rp` | radius grid of the 2h tables | cMpc/$h$, `(128,)` | 1h+2h variant assembly |
-| `haloModel/Wp_hh` | matter two-point correlation table of the chain (despite the $W_p$ name) | `(50, 128)` | same |
-| `haloModel/Sigma_hh` | two-halo surface density, **bias not applied** (consumer multiplies by $b$ or $\langle b\rangle_i$) | `(50, 128)` | same |
-| `haloModel/dSigma_hh` | two-halo excess surface density, bias not applied | `(50, 128)` | same |
-
-## Science and numerics
+## Numerical framework
 
 Around a halo of mass $M$, the correlated-matter surface density is the
 matter correlation projected along the line of sight, scaled by the halo
@@ -85,3 +65,24 @@ Any 1h+2h comparison must assemble the term from `BiasWeightedSel` +
 
 Full derivation and the composition comparison:
 {doc}`../science/index`.
+
+## CosmoSIS setup
+
+Enable inside the `[halo_model]` section (everything else as in the
+reference — see {doc}`../cosmology/halo_model`):
+
+```ini
+[halo_model]
+compute_lensing_1h = T
+compute_lensing_2h = T   ; reference run sets F
+```
+
+## DataBlock outputs (when enabled)
+
+| DataBlock output | Meaning | Units / shape | Consumed by |
+|---|---|---|---|
+| `haloModel/Rp` | radius grid of the 2h tables | cMpc/$h$, `(128,)` | 1h+2h variant assembly |
+| `haloModel/Wp_hh` | matter two-point correlation table of the chain (despite the $W_p$ name) | `(50, 128)` | same |
+| `haloModel/Sigma_hh` | two-halo surface density, **bias not applied** (consumer multiplies by $b$ or $\langle b\rangle_i$) | `(50, 128)` | same |
+| `haloModel/dSigma_hh` | two-halo excess surface density, bias not applied | `(50, 128)` | same |
+

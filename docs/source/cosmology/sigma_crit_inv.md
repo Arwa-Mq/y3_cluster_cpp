@@ -16,6 +16,18 @@ converts $\Delta\Sigma$ into tangential shear. Both shear modules
   `z_mid`, `bin1`).
 - Loaded by CosmoSIS as a Python module.
 
+## Numerical framework
+
+$$\langle \Sigma_{\rm crit}^{-1} \rangle(z_l)
+= h_0 \int dz_s\; p(z_s + \delta_z)\,
+  \frac{4\pi G}{c^2}\,
+  \frac{D_A(z_l)\, \big[ D_A(z_s) - \frac{1+z_l}{1+z_s} D_A(z_l) \big]}{D_A(z_s)},$$
+
+clipped at zero for sources in front of the lens. Per lens redshift:
+1-D interpolation of $D_A$ from `distances`, source $p(z_s)$ shifted by
+`delta_z`, trapezoidal integration over the source grid
+($G = 4.517 \times 10^{-48}\,\mathrm{Mpc^3\,M_\odot^{-1}\,s^{-2}}$).
+
 ## CosmoSIS setup
 
 ```ini
@@ -59,14 +71,3 @@ z_bins = 50
 | `average_sigma_crit_inv/zlense` | lens-redshift grid | `(50,)` | `Shear1hMisSel`, `shear_prj_frozen_physics` |
 | `average_sigma_crit_inv/sci_average` | $\langle\Sigma_{\rm crit}^{-1}\rangle(z_l)$ | inverse surface density, in the convention matching the $10^{-12}$-scaled NFW $\Delta\Sigma$ tables ($M_\odot/(h\,\mathrm{pc}^2)$) so $\gamma_t$ is dimensionless; `(50,)` | same |
 
-## Science and numerics
-
-$$\langle \Sigma_{\rm crit}^{-1} \rangle(z_l)
-= h_0 \int dz_s\; p(z_s + \delta_z)\,
-  \frac{4\pi G}{c^2}\,
-  \frac{D_A(z_l)\, \big[ D_A(z_s) - \frac{1+z_l}{1+z_s} D_A(z_l) \big]}{D_A(z_s)},$$
-
-clipped at zero for sources in front of the lens. Per lens redshift:
-1-D interpolation of $D_A$ from `distances`, source $p(z_s)$ shifted by
-`delta_z`, trapezoidal integration over the source grid
-($G = 4.517 \times 10^{-48}\,\mathrm{Mpc^3\,M_\odot^{-1}\,s^{-2}}$).

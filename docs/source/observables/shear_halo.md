@@ -22,6 +22,47 @@ adds the projection term.
   grids of the gamma-kernel miscentred NFW in
   $(R/r_s, R_{\rm mis}/r_s)$, loaded once at module construction.
 
+## Numerical framework
+
+The count-weighted lensing operator
+$\langle N\Sigma\rangle = f_{\rm cen}\langle N\Sigma_{\rm cen}\rangle +
+(1 - f_{\rm cen})\langle N\Sigma_{\rm mis}\rangle$ and its miscentering
+treatment follow
+[DES Cluster et al. 2023](https://ui.adsabs.harvard.edu/abs/2023arXiv230906593A/abstract)
+(arXiv:[2309.06593](https://arxiv.org/abs/2309.06593)), the reference
+paper for this software suite. This module evaluates it with the
+miscentering-mixture shear weight, using the DES Y3 redMaPPer
+miscentring calibration of
+[Kelly et al. 2024, MNRAS 533, 572](https://ui.adsabs.harvard.edu/abs/2024MNRAS.533..572K/abstract)
+(arXiv:[2310.13207](https://arxiv.org/abs/2310.13207)) — the Gamma
+offset kernel, an updated analysis of the DES Y1 calibration of
+[Zhang et al. 2019, MNRAS 487, 2578](https://ui.adsabs.harvard.edu/abs/2019MNRAS.487.2578Z/abstract)
+(arXiv:[1901.07119](https://arxiv.org/abs/1901.07119)):
+
+$$\gamma_t^{1h,\rm full}(R; M, z) =
+\Big[(1 - f_{\rm mis})\,\Delta\Sigma_{\rm NFW}(R, M)
++ f_{\rm mis}\,\Delta\Sigma_{\rm mis}\big(R, M;\, \tau_{\rm mis} R_\lambda\big)\Big]\,
+\langle\Sigma_{\rm crit}^{-1}\rangle(z),$$
+
+with $R_\lambda = (\lambda/100)^{0.2}\,h^{-1}$Mpc resolved per richness
+bin (`bin_index % 4`). This is **target-cluster miscentering** — the
+assigned redMaPPer centre offset from the true halo centre, with
+$(f_{\rm mis}, \tau_{\rm mis})$ as nuisance parameters — distinct from
+the parameter-free neighbouring-halo offset inside the two-halo term
+({doc}`shear_projection`). The profile is $z$-free, so the $z$-marginalised
+weight $W_{ij}(\ln M)$ — including the $\Sigma_{\rm crit}^{-1}$ factor —
+is built once per sample; each of the 180 grid points is one 1-D GL mass
+sum ($\sim 16\times$ faster than the retired per-(bin, $R$) Cuhre path,
+deterministic cost). Both mixture pieces are linear in $\Delta\Sigma$, so
+the one-halo + projection sum in the likelihood is exact (tangential
+shear, not reduced shear — see {doc}`../systematics/index`).
+
+Setting `miscentering/f_mis = 0` recovers the centred-only `Shear1hSel`
+result ({doc}`../variants`). Radial-factorisation error budget:
+[shear1h_radial_factorization.tex](https://github.com/estevesjh/y3_cluster_cpp/blob/master/docs/shear1h_radial_factorization.tex).
+Model derivation: {doc}`../science/index`; miscentering model:
+{doc}`../systematics/index`.
+
 ## CosmoSIS setup
 
 ```ini
@@ -76,43 +117,3 @@ Everything {doc}`NumCountsSel <number_counts>` reads, plus:
 |---|---|---|---|
 | `shear1hmissel/vals` | $N_i[\gamma_t^{1h,\rm full}](R)$, bin slow / radius fast | `(180,)` | `likelihoods` |
 
-## Science and numerics
-
-The count-weighted lensing operator
-$\langle N\Sigma\rangle = f_{\rm cen}\langle N\Sigma_{\rm cen}\rangle +
-(1 - f_{\rm cen})\langle N\Sigma_{\rm mis}\rangle$ and its miscentering
-treatment follow
-[DES Cluster et al. 2023](https://ui.adsabs.harvard.edu/abs/2023arXiv230906593A/abstract)
-(arXiv:[2309.06593](https://arxiv.org/abs/2309.06593)), the reference
-paper for this software suite. This module evaluates it with the
-miscentering-mixture shear weight, using the DES Y3 redMaPPer
-miscentring calibration of
-[Kelly et al. 2024, MNRAS 533, 572](https://ui.adsabs.harvard.edu/abs/2024MNRAS.533..572K/abstract)
-(arXiv:[2310.13207](https://arxiv.org/abs/2310.13207)) — the Gamma
-offset kernel, an updated analysis of the DES Y1 calibration of
-[Zhang et al. 2019, MNRAS 487, 2578](https://ui.adsabs.harvard.edu/abs/2019MNRAS.487.2578Z/abstract)
-(arXiv:[1901.07119](https://arxiv.org/abs/1901.07119)):
-
-$$\gamma_t^{1h,\rm full}(R; M, z) =
-\Big[(1 - f_{\rm mis})\,\Delta\Sigma_{\rm NFW}(R, M)
-+ f_{\rm mis}\,\Delta\Sigma_{\rm mis}\big(R, M;\, \tau_{\rm mis} R_\lambda\big)\Big]\,
-\langle\Sigma_{\rm crit}^{-1}\rangle(z),$$
-
-with $R_\lambda = (\lambda/100)^{0.2}\,h^{-1}$Mpc resolved per richness
-bin (`bin_index % 4`). This is **target-cluster miscentering** — the
-assigned redMaPPer centre offset from the true halo centre, with
-$(f_{\rm mis}, \tau_{\rm mis})$ as nuisance parameters — distinct from
-the parameter-free neighbouring-halo offset inside the two-halo term
-({doc}`shear_projection`). The profile is $z$-free, so the $z$-marginalised
-weight $W_{ij}(\ln M)$ — including the $\Sigma_{\rm crit}^{-1}$ factor —
-is built once per sample; each of the 180 grid points is one 1-D GL mass
-sum ($\sim 16\times$ faster than the retired per-(bin, $R$) Cuhre path,
-deterministic cost). Both mixture pieces are linear in $\Delta\Sigma$, so
-the one-halo + projection sum in the likelihood is exact (tangential
-shear, not reduced shear — see {doc}`../systematics/index`).
-
-Setting `miscentering/f_mis = 0` recovers the centred-only `Shear1hSel`
-result ({doc}`../variants`). Radial-factorisation error budget:
-[shear1h_radial_factorization.tex](https://github.com/estevesjh/y3_cluster_cpp/blob/master/docs/shear1h_radial_factorization.tex).
-Model derivation: {doc}`../science/index`; miscentering model:
-{doc}`../systematics/index`.

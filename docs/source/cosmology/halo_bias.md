@@ -17,15 +17,7 @@ interpolate it.
   longer exist; every C++ consumer reads the DataBlock grid through
   `Interp2D`.
 
-## The DataBlock contract
-
-| DataBlock key | Meaning | Units / shape | Produced by | Consumed by |
-|---|---|---|---|---|
-| `haloModel/lnM` | mass axis | $\ln(M_\odot/h)$, `(100,)` | `halo_model` | `b_sel_marg`, `shear_prj_frozen_physics`, `bsel` |
-| `haloModel/z` | redshift axis | `(50,)` | `halo_model` | same |
-| `haloModel/bias` | Tinker-2010 bias $b(M,z)$, $\Delta = 200\bar\rho_m$ | dimensionless, `(50, 100)` | `halo_model` | same |
-
-## Science and numerics
+## Numerical framework
 
 Tinker et al. (2010) fitting function of the peak height,
 
@@ -44,3 +36,12 @@ Where it enters the observables:
 - `shear_prj_frozen_physics` multiplies the clustered channel by
   $b(M,z)\, b_{\rm sel}(\theta)\, \xi_{\rm NL}$
   ({doc}`../observables/shear_projection`).
+
+## The DataBlock contract
+
+| DataBlock key | Meaning | Units / shape | Produced by | Consumed by |
+|---|---|---|---|---|
+| `haloModel/lnM` | mass axis | $\ln(M_\odot/h)$, `(100,)` | `halo_model` | `b_sel_marg`, `shear_prj_frozen_physics`, `bsel` |
+| `haloModel/z` | redshift axis | `(50,)` | `halo_model` | same |
+| `haloModel/bias` | Tinker-2010 bias $b(M,z)$, $\Delta = 200\bar\rho_m$ | dimensionless, `(50, 100)` | `halo_model` | same |
+

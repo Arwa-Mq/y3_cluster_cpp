@@ -24,6 +24,62 @@ $\gamma_t^{\rm theory} = \langle\gamma_t^{1h}\rangle + \gamma_t^{\rm prj}$.
   `data/nfw_off_center/table_1000_1e-03_5e+03_single_{logx, logxmis}.txt`,
   `…_log_deltasigma_single.txt`.
 
+## Numerical framework
+
+The population-integral framework — bin-averaged lensing predicted
+jointly with the number counts from the same halo population and
+selection kernels — is that of
+[DES Cluster et al. 2023](https://ui.adsabs.harvard.edu/abs/2023arXiv230906593A/abstract)
+(arXiv:[2309.06593](https://arxiv.org/abs/2309.06593)), the reference
+paper for this software suite; the projection-selection extension
+documented here is the model of
+[Costanzi et al. 2026, PhRvD 113, 103508](https://ui.adsabs.harvard.edu/abs/2026PhRvD.113j3508C/abstract)
+(arXiv:[2604.05833](https://arxiv.org/abs/2604.05833)) built on top of
+it: a scale-dependent parametrization of the optical cluster bias whose
+small- and large-scale plateaus are set by the amplitude of projection
+effects, with the two-halo profile expressed through off-axis
+line-of-sight haloes.
+
+Per $(\lambda^{\rm ob}, z^{\rm ob}, R)$ wall point, the projected surface
+density of line-of-sight structure:
+
+$$\Delta\Sigma^{\rm prj}(R) = \int dz\, d\ln M\, d\theta\;
+w_z(z, z^{\rm ob})\, \frac{dV}{d\Omega\,dz}\, n(M, z)\,
+\big[\underbrace{1}_{\rm rnd} + \underbrace{b(M,z)\, b_{\rm sel}(\theta)\,
+\xi_{\rm NL}(|\Delta\chi|, z^{\rm ob})}_{\rm cl}\big]\,
+\Delta\Sigma_{\rm mis}\big(R \mid M,\, \theta D_A(z^{\rm ob})\big)\,
+\mathbb{1}\big[\theta > \theta_{\rm excl}(z)\big],$$
+
+with the parabolic photo-$z$ kernel $w_z$, the analytic
+$b_{\rm sel}(\theta) = B_{\rm small} + (B_{\rm large} - B_{\rm small})\,
+\sigma(\theta)$ from the `bsel` plateaus, and the single-offset miscentred
+NFW — **neighbouring-halo miscentering** in the paper's language: the
+"offset" is the projected halo–halo separation $\theta D_A(z^{\rm ob})$
+itself, a geometric ingredient with no free nuisance parameters (unlike
+the target-cluster miscentering of {doc}`shear_halo`). The exclusion
+$\theta > \theta_{\rm excl}(z)$ is a line-of-sight **slab** cut at the
+redMaPPer aperture $R_\lambda(1+z^{\rm ob})$, not a 3-D ball. The
+$\theta$ grid is log-GL
+on segments split at
+$\{\theta_{\rm lo}, \theta_{\rm excl,o}, \theta_R(R_k), \theta_\lambda,
+2\theta_\lambda, \theta_{\max}\}$; the $z$ grid is a ring around
+$z^{\rm ob}$ plus foreground/background $\log|\Delta\chi|$ wings — both
+identical to the full evaluator.
+
+**The "frozen physics" reduction** (vs `ShearPrjEvaluator`,
+{doc}`../variants`): the random channel's $z$ sum is hoisted exactly; the
+clustered channel freezes the mass dependence at $z^{\rm ob}$ and carries
+the redshift drift through an $r_s(M)$-anchored amplitude
+$a_b(z)$, making the whole wall an explicit fixed
+$N_\theta \times N_M$ grid + dot product — no adaptive integrator.
+$\sim 3.2\times$ faster at `n_lnm = 16` with $< 0.2\%$ deviation from the
+full evaluator at `n_lnm = 24`.
+
+Model derivation: {doc}`../science/index` (projection lensing);
+selection-bias inputs: {doc}`../selection/bsel`; full-fidelity and
+adaptive validation backends (`ShearPrjEvaluator`, `ShearPrjGsl`,
+`ShearPrjCuhre`): {doc}`../variants`.
+
 ## CosmoSIS setup
 
 ```ini
@@ -108,58 +164,3 @@ Nine arrays, each of length 180 (total = `rnd` + `cl`):
 Do not load this module together with `ShearPrjEvaluator` in one
 pipeline: both write `shear_prj/*` and the later module wins.
 
-## Science and numerics
-
-The population-integral framework — bin-averaged lensing predicted
-jointly with the number counts from the same halo population and
-selection kernels — is that of
-[DES Cluster et al. 2023](https://ui.adsabs.harvard.edu/abs/2023arXiv230906593A/abstract)
-(arXiv:[2309.06593](https://arxiv.org/abs/2309.06593)), the reference
-paper for this software suite; the projection-selection extension
-documented here is the model of
-[Costanzi et al. 2026, PhRvD 113, 103508](https://ui.adsabs.harvard.edu/abs/2026PhRvD.113j3508C/abstract)
-(arXiv:[2604.05833](https://arxiv.org/abs/2604.05833)) built on top of
-it: a scale-dependent parametrization of the optical cluster bias whose
-small- and large-scale plateaus are set by the amplitude of projection
-effects, with the two-halo profile expressed through off-axis
-line-of-sight haloes.
-
-Per $(\lambda^{\rm ob}, z^{\rm ob}, R)$ wall point, the projected surface
-density of line-of-sight structure:
-
-$$\Delta\Sigma^{\rm prj}(R) = \int dz\, d\ln M\, d\theta\;
-w_z(z, z^{\rm ob})\, \frac{dV}{d\Omega\,dz}\, n(M, z)\,
-\big[\underbrace{1}_{\rm rnd} + \underbrace{b(M,z)\, b_{\rm sel}(\theta)\,
-\xi_{\rm NL}(|\Delta\chi|, z^{\rm ob})}_{\rm cl}\big]\,
-\Delta\Sigma_{\rm mis}\big(R \mid M,\, \theta D_A(z^{\rm ob})\big)\,
-\mathbb{1}\big[\theta > \theta_{\rm excl}(z)\big],$$
-
-with the parabolic photo-$z$ kernel $w_z$, the analytic
-$b_{\rm sel}(\theta) = B_{\rm small} + (B_{\rm large} - B_{\rm small})\,
-\sigma(\theta)$ from the `bsel` plateaus, and the single-offset miscentred
-NFW — **neighbouring-halo miscentering** in the paper's language: the
-"offset" is the projected halo–halo separation $\theta D_A(z^{\rm ob})$
-itself, a geometric ingredient with no free nuisance parameters (unlike
-the target-cluster miscentering of {doc}`shear_halo`). The exclusion
-$\theta > \theta_{\rm excl}(z)$ is a line-of-sight **slab** cut at the
-redMaPPer aperture $R_\lambda(1+z^{\rm ob})$, not a 3-D ball. The
-$\theta$ grid is log-GL
-on segments split at
-$\{\theta_{\rm lo}, \theta_{\rm excl,o}, \theta_R(R_k), \theta_\lambda,
-2\theta_\lambda, \theta_{\max}\}$; the $z$ grid is a ring around
-$z^{\rm ob}$ plus foreground/background $\log|\Delta\chi|$ wings — both
-identical to the full evaluator.
-
-**The "frozen physics" reduction** (vs `ShearPrjEvaluator`,
-{doc}`../variants`): the random channel's $z$ sum is hoisted exactly; the
-clustered channel freezes the mass dependence at $z^{\rm ob}$ and carries
-the redshift drift through an $r_s(M)$-anchored amplitude
-$a_b(z)$, making the whole wall an explicit fixed
-$N_\theta \times N_M$ grid + dot product — no adaptive integrator.
-$\sim 3.2\times$ faster at `n_lnm = 16` with $< 0.2\%$ deviation from the
-full evaluator at `n_lnm = 24`.
-
-Model derivation: {doc}`../science/index` (projection lensing);
-selection-bias inputs: {doc}`../selection/bsel`; full-fidelity and
-adaptive validation backends (`ShearPrjEvaluator`, `ShearPrjGsl`,
-`ShearPrjCuhre`): {doc}`../variants`.

@@ -25,20 +25,7 @@ $$P(\lambda^{\rm ob}\mid M, z) = \int d\lambda^{\rm tr}\,
   (`PrjParams`, the Buzzard-calibrated spline table; the standalone
   `prj_params` DataBlock module is retired).
 
-## Parameters (DataBlock)
-
-Sampled parameters, written by the values file into `cluster_mor`:
-
-| DataBlock key | Meaning | Units | Read by |
-|---|---|---|---|
-| `cluster_mor/log10_Mmin` | mass where $\mu_{\rm sat}$ turns on | $\log_{10} M_\odot/h$ | `sel_function`, `b_sel_marg`, `bsel` |
-| `cluster_mor/log10_M1` or `log10_ratio` | satellite normalisation mass (or its ratio to `Mmin`) | $\log_{10} M_\odot/h$ | same |
-| `cluster_mor/alpha` | satellite power-law slope | — | same |
-| `cluster_mor/epsilon` | redshift evolution exponent | — | same |
-| `cluster_mor/sigma_lambda` | intrinsic scatter parameter | — | same |
-| `cluster_mor/z_pivot` | redshift pivot (optional) | — | same |
-
-## Science and numerics
+## Numerical framework
 
 ### The Costanzi selection-effect methodology
 
@@ -147,3 +134,17 @@ Where the reference pipeline evaluates it:
 
 Full derivation (log-normal alternative, EMG CDF closed form, quadrature
 placement): {doc}`../science/index`.
+
+## Parameters (DataBlock)
+
+Sampled parameters, written by the values file into `cluster_mor`:
+
+| DataBlock key | Meaning | Units | Read by |
+|---|---|---|---|
+| `cluster_mor/log10_Mmin` | mass where $\mu_{\rm sat}$ turns on | $\log_{10} M_\odot/h$ | `sel_function`, `b_sel_marg`, `bsel` |
+| `cluster_mor/log10_M1` or `log10_ratio` | satellite normalisation mass (or its ratio to `Mmin`) | $\log_{10} M_\odot/h$ | same |
+| `cluster_mor/alpha` | satellite power-law slope | — | same |
+| `cluster_mor/epsilon` | redshift evolution exponent | — | same |
+| `cluster_mor/sigma_lambda` | intrinsic scatter parameter | — | same |
+| `cluster_mor/z_pivot` | redshift pivot (optional) | — | same |
+

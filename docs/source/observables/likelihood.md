@@ -13,6 +13,24 @@ writes the Gaussian $\log L$ the sampler consumes.
 - Loaded by CosmoSIS as a Python module; matched to the sampler by
   `likelihoods = likelihoods` in `[pipeline]`.
 
+## Numerical framework
+
+$$\gamma_t^{\rm theory}(R \mid i) =
+\frac{\mathtt{shear1hmissel/vals}}{\mathrm{repeat}(\mathtt{numcountssel/vals})}
++ \mathtt{shear\_prj/vals},
+\qquad
+\log L = -\tfrac12 \sum_{\rm obs \in \{NC,\, Shear\}}
+\delta^{\mathsf T} C^{-1} \delta,$$
+
+with zero-guarded division (bins with $N_i \le 0$ contribute 0 to the
+one-halo average). The two shear pieces add linearly because both are
+tangential shear, not reduced shear — the
+$1/(1 - \kappa)$ denominator was retired
+({doc}`../systematics/index`). Shapes are hard-asserted at setup and on
+every DataBlock read, so mismatches abort before an MCMC starts. In
+`log_space` mode the theory is floored at $10^{-300}$ so a transient
+non-positive prediction gives a large finite $\chi^2$ instead of a crash.
+
 ## CosmoSIS setup
 
 ```ini
@@ -65,20 +83,3 @@ file) are ignored.
 |---|---|---|---|
 | `likelihoods/likelihoods_like` | Gaussian $\log L$ | scalar | sampler |
 
-## Science and numerics
-
-$$\gamma_t^{\rm theory}(R \mid i) =
-\frac{\mathtt{shear1hmissel/vals}}{\mathrm{repeat}(\mathtt{numcountssel/vals})}
-+ \mathtt{shear\_prj/vals},
-\qquad
-\log L = -\tfrac12 \sum_{\rm obs \in \{NC,\, Shear\}}
-\delta^{\mathsf T} C^{-1} \delta,$$
-
-with zero-guarded division (bins with $N_i \le 0$ contribute 0 to the
-one-halo average). The two shear pieces add linearly because both are
-tangential shear, not reduced shear — the
-$1/(1 - \kappa)$ denominator was retired
-({doc}`../systematics/index`). Shapes are hard-asserted at setup and on
-every DataBlock read, so mismatches abort before an MCMC starts. In
-`log_space` mode the theory is floored at $10^{-300}$ so a transient
-non-positive prediction gives a large finite $\chi^2$ instead of a crash.

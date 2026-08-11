@@ -15,6 +15,13 @@ consistent. Every downstream module reads the completed
   `${COSMOSIS_STANDARD_LIBRARY}` checkout).
 - Loaded by CosmoSIS as a Python module (no compiled library).
 
+## Numerical framework
+
+Pure algebraic closure of the Friedmann-parameter relations (e.g.
+$\Omega_\Lambda = 1 - \Omega_m - \Omega_k$,
+$\omega_i = \Omega_i h^2$); no integration. It fails loudly if the sampled
+set over-constrains the relations.
+
 ## CosmoSIS setup
 
 ```ini
@@ -42,9 +49,3 @@ None set in the reference pipeline (defaults throughout).
 |---|---|---|---|
 | `cosmological_parameters/*` (completed) | full consistent set: `h0`, `hubble`, `omega_m`, `omega_b`, `omega_c`, `omega_nu`, `omega_k`, `omega_lambda`, `ommh2`, `ombh2`, `omch2`, `baryon_fraction`, … | scalars | every downstream module |
 
-## Science and numerics
-
-Pure algebraic closure of the Friedmann-parameter relations (e.g.
-$\Omega_\Lambda = 1 - \Omega_m - \Omega_k$,
-$\omega_i = \Omega_i h^2$); no integration. It fails loudly if the sampled
-set over-constrains the relations.

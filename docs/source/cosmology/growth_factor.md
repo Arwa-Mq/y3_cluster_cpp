@@ -15,6 +15,15 @@ redshift-scale the Tinker peak height.
 - Compiled library loaded by CosmoSIS:
   `${COSMOSIS_STANDARD_LIBRARY}/structure/growth_factor/interface.so`.
 
+## Numerical framework
+
+Integrates the linear-perturbation growth ODE for
+$\delta(a' ) = \delta(a)\, D(a')/D(a)$ in flat $w_0 w_a$CDM. Consumers must
+renormalise by $D(0)$: CosmoSIS growth is matter-domination-normalised, so a
+raw $D(z)$ ratio without the $D(0)$ division inflates the Tinker peak height
+by $\sim 1.3\times$ (a historical bug documented in
+{doc}`halo_model <halo_model>`).
+
 ## CosmoSIS setup
 
 ```ini
@@ -56,11 +65,3 @@ dz   = 0.01
 | `growth_parameters/f_z` | growth rate $f = d\ln D/d\ln a$ | `(406,)` | — (unused here) |
 | `growth_parameters/a` | scale factor of the samples | `(406,)` | — |
 
-## Science and numerics
-
-Integrates the linear-perturbation growth ODE for
-$\delta(a' ) = \delta(a)\, D(a')/D(a)$ in flat $w_0 w_a$CDM. Consumers must
-renormalise by $D(0)$: CosmoSIS growth is matter-domination-normalised, so a
-raw $D(z)$ ratio without the $D(0)$ division inflates the Tinker peak height
-by $\sim 1.3\times$ (a historical bug documented in
-{doc}`halo_model <halo_model>`).

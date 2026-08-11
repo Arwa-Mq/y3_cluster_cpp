@@ -13,6 +13,27 @@ tensor and interpolate it inside their population integrals.
   (`y3_cluster_cpp` @ `d7feb75`).
 - Loaded by CosmoSIS as a Python module.
 
+## Numerical framework
+
+$$S_{ij}(\ln M, z) = \Big[\textstyle\sum_k W_k\,
+K_i(\lambda_k, z)\, P_{\rm HOD}(\lambda_k \mid M, z)\Big]\, K_j(z),$$
+
+where $K_i$ differences the EMG CDF of
+$P(\lambda^{\rm ob}\mid\lambda^{\rm tr}, z)$ at the bin edges, $K_j$ is a
+Gaussian photo-$z$ bin kernel of width `sigma_z`, and $P_{\rm HOD}$ is the
+shifted-Poisson richness–mass relation — both defined in
+{doc}`../observables/richness_mass`. In the paper's language: $K_i$ is
+the **observed-richness kernel** $\mathcal{S}_i$, $K_j$ the
+**observed-redshift kernel** $\mathcal{S}_j$, and the
+$\lambda^{\rm tr}$-integrated product is the **richness selection
+function** $S_i(M, z^{\rm tr})$ — together the redMaPPer selection
+function $\mathcal{S}_{ij}$. The $\lambda^{\rm tr}$ sum uses $N_q$
+GL nodes bracketed at $\mu_{\rm eff} \pm L\sigma_{\rm eff}$; the EMG CDF is
+evaluated via `erfcx` at the 5 unique bin edges {20, 30, 45, 60, 200} only.
+The Python kernels match the C++ models
+(`src/models/mor_hod_t.hh`, `src/models/richness_kernel_t.hh`)
+line-for-line. Full derivation: {doc}`../science/index`.
+
 ## CosmoSIS setup
 
 ```ini
@@ -71,23 +92,3 @@ N_q    = 32
 | `sel_function/z` | shared redshift grid | `(64,)` | same |
 | `sel_function/S_stack` | packed selection tensor $S_{ij}(\ln M, z)$, layout `(bin, z, lnM)`, C-contiguous | `(12, 64, 192)` | same |
 
-## Science and numerics
-
-$$S_{ij}(\ln M, z) = \Big[\textstyle\sum_k W_k\,
-K_i(\lambda_k, z)\, P_{\rm HOD}(\lambda_k \mid M, z)\Big]\, K_j(z),$$
-
-where $K_i$ differences the EMG CDF of
-$P(\lambda^{\rm ob}\mid\lambda^{\rm tr}, z)$ at the bin edges, $K_j$ is a
-Gaussian photo-$z$ bin kernel of width `sigma_z`, and $P_{\rm HOD}$ is the
-shifted-Poisson richness–mass relation — both defined in
-{doc}`../observables/richness_mass`. In the paper's language: $K_i$ is
-the **observed-richness kernel** $\mathcal{S}_i$, $K_j$ the
-**observed-redshift kernel** $\mathcal{S}_j$, and the
-$\lambda^{\rm tr}$-integrated product is the **richness selection
-function** $S_i(M, z^{\rm tr})$ — together the redMaPPer selection
-function $\mathcal{S}_{ij}$. The $\lambda^{\rm tr}$ sum uses $N_q$
-GL nodes bracketed at $\mu_{\rm eff} \pm L\sigma_{\rm eff}$; the EMG CDF is
-evaluated via `erfcx` at the 5 unique bin edges {20, 30, 45, 60, 200} only.
-The Python kernels match the C++ models
-(`src/models/mor_hod_t.hh`, `src/models/richness_kernel_t.hh`)
-line-for-line. Full derivation: {doc}`../science/index`.

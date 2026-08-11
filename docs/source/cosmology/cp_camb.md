@@ -17,6 +17,26 @@ emulator forward pass per sample.
   imported from `emulator_repo`.
 - Loaded by CosmoSIS as a Python module.
 
+## Numerical framework
+
+The emulators are trained at $z = 0$ only; redshift evolution is
+reconstructed with the linear growth factor:
+
+$$P(k, z) = \left[\frac{D(z)}{D(0)}\right]^2 P_{\rm emu}(k, z{=}0),
+\qquad
+P_{\rm emu} = 10^{\,\mathtt{NN}(h_0,\, \Omega_m,\, \Omega_b,\, n_s,\, \sigma_8,\, m_\nu)}.$$
+
+Per sample: (1) validate the parameter vector against the emulator's
+trained box (`parameters_min/max`) and reject *before* any GSL-backed
+downstream code sees the draw ($\Omega_b \ge \Omega_m$ also rejects);
+(2) write astropy distances; (3) one NN forward pass per loaded emulator,
+growth-broadcast, `put_grid`. All loaded emulators are checked at setup
+to share one $k$ grid. The reference values file fixes `mnu = 0` because
+the $D(z)^2$ rescaling assumes scale-independent growth.
+
+Emulator-vs-CAMB validation (residuals on downstream number counts):
+[emulator_validation.tex](https://github.com/estevesjh/y3_cluster_cpp/blob/master/docs/emulator_validation.tex).
+
 ## CosmoSIS setup
 
 ```ini
@@ -65,22 +85,3 @@ nz = 50
 | `distances/{z, a, d_a, d_m, d_l, d_c, h, mu, nz}` | astropy background distances; Mpc (CAMB convention, no $h$); `d_c = d_m` (flat); `h = H(z)/c` in Mpc⁻¹ | `(50,)` each | `average_sigma_crit_inv`, `NumCountsSel`, `Shear1hMisSel`, `b_sel_marg`, `bsel`, `shear_prj_frozen_physics` |
 | `cosmological_parameters/cp_camb_invalid_reason` | rejection reason string (only on rejected draws, with module status 1 → $\log L = -\infty$) | — | diagnostics |
 
-## Science and numerics
-
-The emulators are trained at $z = 0$ only; redshift evolution is
-reconstructed with the linear growth factor:
-
-$$P(k, z) = \left[\frac{D(z)}{D(0)}\right]^2 P_{\rm emu}(k, z{=}0),
-\qquad
-P_{\rm emu} = 10^{\,\mathtt{NN}(h_0,\, \Omega_m,\, \Omega_b,\, n_s,\, \sigma_8,\, m_\nu)}.$$
-
-Per sample: (1) validate the parameter vector against the emulator's
-trained box (`parameters_min/max`) and reject *before* any GSL-backed
-downstream code sees the draw ($\Omega_b \ge \Omega_m$ also rejects);
-(2) write astropy distances; (3) one NN forward pass per loaded emulator,
-growth-broadcast, `put_grid`. All loaded emulators are checked at setup
-to share one $k$ grid. The reference values file fixes `mnu = 0` because
-the $D(z)^2$ rescaling assumes scale-independent growth.
-
-Emulator-vs-CAMB validation (residuals on downstream number counts):
-[emulator_validation.tex](https://github.com/estevesjh/y3_cluster_cpp/blob/master/docs/emulator_validation.tex).

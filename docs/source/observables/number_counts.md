@@ -16,6 +16,34 @@ of the theory vector and the denominator of the stacked one-halo shear.
 - Compiled library loaded by CosmoSIS:
   `${Y3_CLUSTER_CPP_DIR}/release-build/src/modules/num_counts_sel/NumCountsSel.so`.
 
+## Numerical framework
+
+The number-count forward model follows
+[DES Cluster et al. 2023](https://ui.adsabs.harvard.edu/abs/2023arXiv230906593A/abstract)
+(arXiv:[2309.06593](https://arxiv.org/abs/2309.06593)) — the reference
+paper for this software suite: cluster counts predicted per
+$(\lambda^{\rm ob}, z^{\rm ob})$ bin from the halo mass function, the
+survey area, the volume element, and the richness–mass and photo-$z$
+kernels (its Eq. 1). This module is the $f = 1$ instance of the
+population operator
+
+$$N_i[f] = \int d\ln M \int dz\;
+\Omega(z)\,\frac{dV}{d\Omega\,dz}\,\frac{dn}{d\ln M}(M,z)\,
+S_{ij}(\ln M, z)\, f(\ln M, z),$$
+
+with $\Omega(z)$ the survey area ({doc}`../selection/survey_area`).
+Evaluation is fixed Gauss–Legendre: once per sample the $z$ axis is
+contracted into per-bin mass weights
+
+$$W_{ij}(\ln M_k) = \sum_q w_q\, \frac{dV}{d\Omega\,dz}(z_q)\,\Omega(z_q)\,
+n(M_k, z_q)\, S_{ij}(\ln M_k, z_q),$$
+
+then each count is a 1-D GL sum over $\ln M$. Deterministic 0.02 s per
+sample vs the retired per-bin adaptive Cuhre path (mean 0.11 s, tail
+1 s). Grid-convergence error $< 0.05\%$ (192 vs 256 `sel_function`
+nodes). Derivation: {doc}`../science/index`; quadrature details:
+{doc}`../numerics/index`.
+
 ## CosmoSIS setup
 
 ```ini
@@ -69,30 +97,3 @@ The output section name is hard-coded in the module (deliberately not an
 ini knob: a CosmoSIS `[DEFAULT]` block would propagate an
 `output_section` value into every module and silently redirect writes).
 
-## Science and numerics
-
-The number-count forward model follows
-[DES Cluster et al. 2023](https://ui.adsabs.harvard.edu/abs/2023arXiv230906593A/abstract)
-(arXiv:[2309.06593](https://arxiv.org/abs/2309.06593)) — the reference
-paper for this software suite: cluster counts predicted per
-$(\lambda^{\rm ob}, z^{\rm ob})$ bin from the halo mass function, the
-survey area, the volume element, and the richness–mass and photo-$z$
-kernels (its Eq. 1). This module is the $f = 1$ instance of the
-population operator
-
-$$N_i[f] = \int d\ln M \int dz\;
-\Omega(z)\,\frac{dV}{d\Omega\,dz}\,\frac{dn}{d\ln M}(M,z)\,
-S_{ij}(\ln M, z)\, f(\ln M, z),$$
-
-with $\Omega(z)$ the survey area ({doc}`../selection/survey_area`).
-Evaluation is fixed Gauss–Legendre: once per sample the $z$ axis is
-contracted into per-bin mass weights
-
-$$W_{ij}(\ln M_k) = \sum_q w_q\, \frac{dV}{d\Omega\,dz}(z_q)\,\Omega(z_q)\,
-n(M_k, z_q)\, S_{ij}(\ln M_k, z_q),$$
-
-then each count is a 1-D GL sum over $\ln M$. Deterministic 0.02 s per
-sample vs the retired per-bin adaptive Cuhre path (mean 0.11 s, tail
-1 s). Grid-convergence error $< 0.05\%$ (192 vs 256 `sel_function`
-nodes). Derivation: {doc}`../science/index`; quadrature details:
-{doc}`../numerics/index`.

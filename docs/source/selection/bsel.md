@@ -29,6 +29,37 @@ Co-computes the three Costanzi-2026 scalars $(P_1, I_1, J)$ on the
 - Compiled library loaded by CosmoSIS:
   `${Y3_CLUSTER_CPP_DIR}/release-build/src/modules/b_sel_marg_cpu/BSelMargIntegrand.so`.
 
+### Numerical framework
+
+$$\begin{aligned}
+P_1 &= \int \mathcal{W}\, f_A\big(\theta, \theta_\lambda(\lambda^{\rm tr})\big), \qquad
+I_1 = \int \mathcal{W}\, b(M,z)\,\xi_{\rm NL}(|\Delta\chi|, z^{\rm ob})\,
+      \sigma(\theta)\, f_A, \\
+J   &= \int \mathcal{W}\, b\,\xi_{\rm NL}\,\big(1 - \sigma(\theta)\big)\, f_A,
+\end{aligned}$$
+
+over $(z, \ln M, \lambda^{\rm tr}, \theta)$. In the paper's notation
+these are specialisations of the projection-average operator
+$\mathcal{P}[X]$: $P_1 = \mathcal{P}[1]$,
+$I_1 = \mathcal{P}[b\,\xi_{\rm NL}\,\sigma(\theta)]$, and
+$J = I_2 - I_1$ with $I_2 = \mathcal{P}[b\,\xi_{\rm NL}]$. The
+population weight is
+$\mathcal{W} \propto (dV/d\Omega\,dz)\, (dn/d\ln M)\,
+P_{\rm HOD}(\lambda^{\rm tr}|M,z)\,\lambda^{\rm tr}\, 2\pi\sin\theta$,
+line-of-sight exclusion $\theta > \theta_{\rm excl}(z)$, and sigmoid
+$\sigma(\theta) = [1 + e^{-k(\theta - \theta_0)}]^{-1}$,
+$k = 2.5/\theta_\lambda$, $\theta_0 = \theta_\lambda/2$. The photo-$z$
+width $\sigma_z(z)$ comes from the compiled-in table
+`src/models/z_kernel_data.hh`, and $\Omega(z)$ is deliberately absent
+({doc}`survey_area`). Fixed GL
+throughout — ring + foreground/background $\log|\Delta\chi|$ wings in $z$,
+one cached $\theta$ grid split at $\theta_\lambda$, mass integral
+pre-contracted — $\sim 74$ ms for all 12 bins ($\sim 10^3\times$ faster
+than the PAGANI reference benchmarks, {doc}`../variants`). Agreement with
+the Python reference `sel_bias._P_operator`: $\leq 1\%$.
+
+---
+
 ### CosmoSIS setup
 
 ```ini
@@ -80,37 +111,6 @@ lambda_bin = 0 1 2 3  0 1 2 3  0 1 2 3
 | `b_sel_marg_I1/vals` | $I_1$ (bias-weighted, sigmoid-on) | `(12,)` | `bsel` |
 | `b_sel_marg_J/vals` | $J = I_2 - I_1$, computed directly — the difference cancels catastrophically at large $\theta$ where $\sigma(\theta) \to 1$ | `(12,)` | `bsel` |
 
-### Science and numerics
-
-$$\begin{aligned}
-P_1 &= \int \mathcal{W}\, f_A\big(\theta, \theta_\lambda(\lambda^{\rm tr})\big), \qquad
-I_1 = \int \mathcal{W}\, b(M,z)\,\xi_{\rm NL}(|\Delta\chi|, z^{\rm ob})\,
-      \sigma(\theta)\, f_A, \\
-J   &= \int \mathcal{W}\, b\,\xi_{\rm NL}\,\big(1 - \sigma(\theta)\big)\, f_A,
-\end{aligned}$$
-
-over $(z, \ln M, \lambda^{\rm tr}, \theta)$. In the paper's notation
-these are specialisations of the projection-average operator
-$\mathcal{P}[X]$: $P_1 = \mathcal{P}[1]$,
-$I_1 = \mathcal{P}[b\,\xi_{\rm NL}\,\sigma(\theta)]$, and
-$J = I_2 - I_1$ with $I_2 = \mathcal{P}[b\,\xi_{\rm NL}]$. The
-population weight is
-$\mathcal{W} \propto (dV/d\Omega\,dz)\, (dn/d\ln M)\,
-P_{\rm HOD}(\lambda^{\rm tr}|M,z)\,\lambda^{\rm tr}\, 2\pi\sin\theta$,
-line-of-sight exclusion $\theta > \theta_{\rm excl}(z)$, and sigmoid
-$\sigma(\theta) = [1 + e^{-k(\theta - \theta_0)}]^{-1}$,
-$k = 2.5/\theta_\lambda$, $\theta_0 = \theta_\lambda/2$. The photo-$z$
-width $\sigma_z(z)$ comes from the compiled-in table
-`src/models/z_kernel_data.hh`, and $\Omega(z)$ is deliberately absent
-({doc}`survey_area`). Fixed GL
-throughout — ring + foreground/background $\log|\Delta\chi|$ wings in $z$,
-one cached $\theta$ grid split at $\theta_\lambda$, mass integral
-pre-contracted — $\sim 74$ ms for all 12 bins ($\sim 10^3\times$ faster
-than the PAGANI reference benchmarks, {doc}`../variants`). Agreement with
-the Python reference `sel_bias._P_operator`: $\leq 1\%$.
-
----
-
 ## bsel — analytic closure for $b_{\rm sel}(\theta)$
 
 `Python` · `y3_cluster_cpp` (`y3_buzzard/`) · `Selection`
@@ -126,6 +126,24 @@ analytic.
 - EMG projection-kernel coefficients imported from
   `y3_buzzard/prj_params.py` (`PrjParams.default()`), not from the
   DataBlock.
+
+### Numerical framework
+
+Since only the sigmoid depends on $\theta$, the $\lambda^{\rm tr}$
+marginalisation factorises exactly into two scalars:
+
+$$\langle b_{\rm sel}\rangle(\theta) = B_{\rm small} +
+(B_{\rm large} - B_{\rm small})\,\sigma(\theta),$$
+
+with, per latent richness,
+$b_\infty = b_{\rm eff}(1 + 0.13\,\delta_{\rm prj})$ and
+$b_{\rm zero} = [(\lambda^{\rm ob} - \lambda^{\rm tr}) - P_1 - b_\infty I_1]/J$.
+$J$ is used directly as the denominator (never $I_2 - I_1$). The
+marginalisation weight combines the GL weights, the EMG
+$P(\lambda^{\rm ob}|\lambda^{\rm tr}, z)$, and the mass-integrated HOD.
+Two guarded historical bugs: the $h_0$ factor on $\chi$ (12% sigmoid
+shift) and the $dn/dM$ vs $dn/d\ln M$ convention (halved $B_{\rm small}$).
+Full model: {doc}`../systematics/index`.
 
 ### CosmoSIS setup
 
@@ -153,7 +171,7 @@ ltr_hi_factor  = 3.0
 | `n_theta`, `theta_lo`, `theta_hi` | legacy tabulated $\theta$ grid (geometric) | rad | 32, $10^{-4}$, $5\times10^{-3}$ |
 | `n_ltr`, `ltr_lo`, `ltr_hi_factor` | $\lambda^{\rm tr}$ GL marginalisation on $[1,\, 3\lambda^{\rm ob}]$ | — | 128, 1.0, 3.0 |
 
-## DataBlock inputs
+### DataBlock inputs
 
 | DataBlock input | Meaning | Units / shape | Produced by |
 |---|---|---|---|
@@ -163,7 +181,7 @@ ltr_hi_factor  = 3.0
 | `cluster_mor/*` | HOD parameters | — | sampler (values file) |
 | `distances/{z, d_c}`, `cosmological_parameters/h0` | $\chi(z^{\rm ob})$ in cMpc/$h$ for $\theta_\lambda$ | — | `cp_camb`, `consistency` |
 
-## DataBlock outputs
+### DataBlock outputs
 
 | DataBlock output | Meaning | Units / shape | Consumed by |
 |---|---|---|---|
@@ -172,20 +190,3 @@ ltr_hi_factor  = 3.0
 | `b_sel_marginalised/b_eff` | mass-averaged halo-bias aggregate per bin — the paper's $b_{\rm halo}$ (unselected bias) | `(3, 4)` | diagnostics |
 | `b_sel_marginalised/{lob, zob, theta, vals}` | backward-compatible $b_{\rm sel}(\theta)$ tabulation | `(4,)`, `(3,)`, `(32,)`, `(4, 3, 32)` | legacy consumers |
 
-### Science and numerics
-
-Since only the sigmoid depends on $\theta$, the $\lambda^{\rm tr}$
-marginalisation factorises exactly into two scalars:
-
-$$\langle b_{\rm sel}\rangle(\theta) = B_{\rm small} +
-(B_{\rm large} - B_{\rm small})\,\sigma(\theta),$$
-
-with, per latent richness,
-$b_\infty = b_{\rm eff}(1 + 0.13\,\delta_{\rm prj})$ and
-$b_{\rm zero} = [(\lambda^{\rm ob} - \lambda^{\rm tr}) - P_1 - b_\infty I_1]/J$.
-$J$ is used directly as the denominator (never $I_2 - I_1$). The
-marginalisation weight combines the GL weights, the EMG
-$P(\lambda^{\rm ob}|\lambda^{\rm tr}, z)$, and the mass-integrated HOD.
-Two guarded historical bugs: the $h_0$ factor on $\chi$ (12% sigmoid
-shift) and the $dn/dM$ vs $dn/d\ln M$ convention (halved $B_{\rm small}$).
-Full model: {doc}`../systematics/index`.

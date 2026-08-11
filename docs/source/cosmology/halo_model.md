@@ -17,6 +17,24 @@ tables $\Sigma_{\rm NFW}$, $\Delta\Sigma_{\rm NFW}$ read by
   NFW $\Sigma/\Delta\Sigma$); numerical backend `cluster_toolkit`.
 - Loaded by CosmoSIS as a Python module.
 
+## Numerical framework
+
+Bias from the $z=0$ peak height with growth-factor redshift scaling:
+
+$$b(M, z) = b_{\rm Tinker}\!\left(\frac{\nu(M)}{D(z)/D(0)}\right),
+\qquad \nu(M) = \frac{\delta_c}{\sigma(M, z{=}0)} .$$
+
+$\nu(M)$ is computed once from the linear $P(k)$
+(`cluster_toolkit.peak_height.nu_at_M`); per redshift slice the bias is
+`bias_at_nu(nu / (D(z)/D(0)))` with $\Delta = 200$, and
+$\xi_{\rm NL}(r,z)$ comes from `ct.xi.xi_mm_at_r` on the nonlinear (or
+fallback linear) spectrum. The $D(0)$ renormalisation is load-bearing:
+without it the matter-domination-normalised CosmoSIS growth inflates $\nu$
+by $1/D(0) \simeq 1.32$ and the bias by up to $2\times$.
+
+Model details: {doc}`halo_bias` (bias), {doc}`../observables/second_halo_term`
+(lensing branches).
+
 ## CosmoSIS setup
 
 ```ini
@@ -75,20 +93,3 @@ compute_lensing_2h = F
 | `haloModel/{r_sigma, Sigma_nfw, dSigma_nfw, concentration, scale_shift, hubble_shift, k}` | NFW 1h lensing tables (`compute_lensing_1h = T`) | `r_sigma`: `(128,)` cMpc/$h$; tables `(100, 128)` | `Shear1hMisSel` |
 | `haloModel/{Rp, Wp_hh, Sigma_hh, dSigma_hh}` | two-halo lensing tables — **not written** in the reference run (`compute_lensing_2h = F`) | `(128,)`, `(100, 128)` | {doc}`../observables/second_halo_term` variants only |
 
-## Science and numerics
-
-Bias from the $z=0$ peak height with growth-factor redshift scaling:
-
-$$b(M, z) = b_{\rm Tinker}\!\left(\frac{\nu(M)}{D(z)/D(0)}\right),
-\qquad \nu(M) = \frac{\delta_c}{\sigma(M, z{=}0)} .$$
-
-$\nu(M)$ is computed once from the linear $P(k)$
-(`cluster_toolkit.peak_height.nu_at_M`); per redshift slice the bias is
-`bias_at_nu(nu / (D(z)/D(0)))` with $\Delta = 200$, and
-$\xi_{\rm NL}(r,z)$ comes from `ct.xi.xi_mm_at_r` on the nonlinear (or
-fallback linear) spectrum. The $D(0)$ renormalisation is load-bearing:
-without it the matter-domination-normalised CosmoSIS growth inflates $\nu$
-by $1/D(0) \simeq 1.32$ and the bias by up to $2\times$.
-
-Model details: {doc}`halo_bias` (bias), {doc}`../observables/second_halo_term`
-(lensing branches).

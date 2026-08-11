@@ -23,6 +23,18 @@ P_2(z - 0.6) & 0.504 \le z < 0.7 \\
 P_3(z) & z \ge 0.7
 \end{cases} \qquad [\mathrm{rad}^2]$$
 
+## Numerical framework
+
+$\Omega(z)$ multiplies the volume element in
+
+$$N_i[f] = \int d\ln M\, dz\; \Omega(z)\, \frac{dV}{d\Omega\,dz}\,
+\frac{dn}{d\ln M}\, S_{ij}\, f,$$
+
+converting a per-steradian density into a survey expectation. Because
+every lensing observable in the likelihood is a *ratio* of count-type
+integrals (or a surface density), the area's only first-order effect on
+the fit is through the number counts themselves.
+
 ## Where it is applied — and where it is not
 
 | Operator | Ω(z)? | Why |
@@ -40,14 +52,3 @@ Revisit the convention jointly on both sides if a mock data vector is
 regenerated with a deliberate survey-area model.
 ```
 
-## Science
-
-$\Omega(z)$ multiplies the volume element in
-
-$$N_i[f] = \int d\ln M\, dz\; \Omega(z)\, \frac{dV}{d\Omega\,dz}\,
-\frac{dn}{d\ln M}\, S_{ij}\, f,$$
-
-converting a per-steradian density into a survey expectation. Because
-every lensing observable in the likelihood is a *ratio* of count-type
-integrals (or a surface density), the area's only first-order effect on
-the fit is through the number counts themselves.
