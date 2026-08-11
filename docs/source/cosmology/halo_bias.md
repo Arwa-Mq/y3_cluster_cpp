@@ -1,4 +1,4 @@
-# Halo bias
+# Halo Bias
 
 `Python` (producer) · `y3_cluster_cpp` (`y3_buzzard/`) · `Halo population`
 

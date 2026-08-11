@@ -1,6 +1,6 @@
-# MfTinker
+# Halo Mass Function
 
-`Fortran 90` · `CosmoSIS Standard Library` · `Halo mass function`
+`Fortran 90` · `CosmoSIS Standard Library` · `Halo mass function` · module `MfTinker`
 
 Computes the Tinker et al. (2008) halo mass function from the linear
 matter power spectrum. Every cluster-population integral downstream

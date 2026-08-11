@@ -1,6 +1,6 @@
-# cp_camb — linear P(k) emulator
+# Linear Power Spectrum Emulator
 
-`Python` · `y3_cluster_cpp` (emulators from `camb-emulator`) · `Cosmology`
+`Python` · `y3_cluster_cpp` (emulators from `camb-emulator`) · `Cosmology` · module `cp_camb`
 
 Replaces the CAMB Boltzmann call with a CosmoPower neural-network
 emulator of the linear matter power spectrum, and publishes background

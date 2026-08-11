@@ -1,6 +1,6 @@
-# sel_function
+# Selection Function
 
-`Python` · `y3_cluster_cpp` · `Selection`
+`Python` · `y3_cluster_cpp` · `Selection` · module `sel_function`
 
 Pre-tabulates, once per sample, the joint richness + photo-$z$ selection
 function $S_{ij}(\ln M, z)$ for all 12 observed bins on one shared grid.

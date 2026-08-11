@@ -1,4 +1,4 @@
-# Selection bias — b_sel_marg + bsel
+# Selection Bias
 
 Two modules run back-to-back to predict the scale-dependent optical
 selection bias $b_{\rm sel}(\theta)$: the C++ `b_sel_marg` evaluates the
@@ -13,9 +13,9 @@ The model is
 
 ---
 
-## b_sel_marg — the $P[X]$ operators
+## The $\mathcal{P}[X]$ Operators
 
-`C++` · `y3_cluster_cpp` · `Selection`
+`C++` · `y3_cluster_cpp` · `Selection` · module `b_sel_marg`
 
 Co-computes the three Costanzi-2026 scalars $(P_1, I_1, J)$ on the
 12-bin $(z^{\rm ob}, \lambda^{\rm ob})$ wall in one fixed-GL pass.
@@ -111,9 +111,9 @@ lambda_bin = 0 1 2 3  0 1 2 3  0 1 2 3
 | `b_sel_marg_I1/vals` | $I_1$ (bias-weighted, sigmoid-on) | `(12,)` | `bsel` |
 | `b_sel_marg_J/vals` | $J = I_2 - I_1$, computed directly — the difference cancels catastrophically at large $\theta$ where $\sigma(\theta) \to 1$ | `(12,)` | `bsel` |
 
-## bsel — analytic closure for $b_{\rm sel}(\theta)$
+## Analytic Closure for $b_{\rm sel}(\theta)$
 
-`Python` · `y3_cluster_cpp` (`y3_buzzard/`) · `Selection`
+`Python` · `y3_cluster_cpp` (`y3_buzzard/`) · `Selection` · module `bsel`
 
 Closes the $(P_1, I_1, J)$ operators into the per-bin bias plateaus and
 publishes the two scalars from which the full $\theta$ dependence is
