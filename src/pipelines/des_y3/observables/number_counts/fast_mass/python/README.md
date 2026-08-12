@@ -12,9 +12,14 @@ Implemented entirely by the shared SelGLCore replica
 `radial_series` moments and every namespace validator build on.
 
 Validation (real extraction dump + in-pipeline smoke run, 12 pinned
-bins): **max |ratio − 1| vs `NumCountsSel.so` = 2.4e-15** — machine
-precision, because node placement, S_stack bilinear interpolation, and
-term composition are replicated exactly. Cost: 5 ms/sample.
+bins), under the namespace accuracy policy (accuracy vs the `full_ltmz`
+fiducial; production agreement is an identity check):
+
+- **accuracy: 7.6e-4 from the fiducial** — the production S_ij
+  tabulation error, which this algorithm inherits by construction;
+- algorithm identity: 2.4e-15 vs `NumCountsSel.so` (node placement,
+  S_stack bilinear interpolation, and term composition replicated
+  exactly). Cost: 5 ms/sample.
 
 DataBlock contract: see the module docstring
 (`numcounts_fast_mass.py`); output `numcounts_fast_mass/vals`

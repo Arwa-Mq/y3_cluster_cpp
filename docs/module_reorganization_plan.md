@@ -407,6 +407,15 @@ Each new implementation must document:
 - its language/backend and production, reference, experimental, or planned
   status.
 
+Accuracy policy (plan owner, 2026-08-12): numerical *accuracy* is
+always quoted against the corresponding `full_ltmz` fiducial — the
+fully explicit calculation, itself certified by internal quadrature
+convergence and by cross-backend agreement — never against a
+production implementation, which carries its own approximations
+(selection tabulation, frozen physics). Agreement with a production
+entry point is reported separately as an algorithm-identity or
+compatibility check.
+
 Validation should be proportional to the change and limited to the maintained
 pipeline surface:
 

@@ -48,36 +48,46 @@ The offline `radial_series` derived data lives under
 by the generator in `observables/shear_1h2h/radial_series/python/`; it is
 never regenerated inside an MCMC sample.
 
-## Measured precision and cost (2026-08-12, fiducial point, 12 pinned bins)
+## Measured accuracy and cost (2026-08-12, fiducial point, 12 pinned bins)
 
-Counts, per sample (production `NumCountsSel.so` fast path = 6 ms
-baseline; the `full_ltmz` backends are references, exempt from
-production timing by the plan):
+**Accuracy policy** (plan owner, 2026-08-12): accuracy is quoted
+against the **`full_ltmz` fiducial** — the fully explicit calculation,
+whose own precision is certified by internal convergence (doubling
+every quadrature node moves it by ≤ 3.8e-4 counts / ≤ 3.1e-4 shear;
+widening the λ bracket by ≤ 1.4e-4) and by three independent
+quadrature strategies agreeing (Python fixed-GL, Cuhre, PAGANI).
+Agreement with a production `.so` is a separate *algorithm-identity*
+check — it proves the same computation, not correctness.
 
-| Backend | Time | Accuracy (measured) |
-|---|---|---|
-| Python `fast_mass` | 5 ms | **2.4e-15 vs production** (same algorithm) |
-| Python `full_ltmz` (fixed GL 96×64×32) | 83 ms | 7.6e-4 vs production |
-| C++ `full_ltmz` (Cuhre, `eps_rel` 1e-4) | 3.1 s | 4.9e-4 vs Python; reported err 1.0e-4 |
-| CUDA `full_ltmz` (PAGANI, 1×A100) | 2.0 s | 6.0e-5 vs C++; reported err 0.7–1.0e-4 |
+Counts (fiducial: Python `full_ltmz`, 83 ms):
 
-Shear, 12 bins × 10 radii per sample (production `Shear1hMisSel.so`
-exact-GL = 9 ms baseline):
+| Path | Time | Error vs fiducial | Identity vs production |
+|---|---|---|---|
+| production `NumCountsSel.so` (`fast_mass`) | 6 ms | **7.6e-4** (S_ij tabulation) | — |
+| Python `fast_mass` | 5 ms | 7.6e-4 (same algorithm) | 2.4e-15 |
+| C++ `full_ltmz` (Cuhre, eps_rel 1e-4) | 3.1 s | 4.9e-4 — inside the fiducial's own convergence band | — |
+| CUDA `full_ltmz` (PAGANI, 1×A100) | 2.0 s | 5.1e-4 (6.0e-5 from the C++ twin) | — |
 
-| Backend | Time | Accuracy (measured) |
-|---|---|---|
-| Python `fast_mass` | 74 ms | **3.1e-15 vs production** (same algorithm) |
-| Python `full_ltmz` | 149 ms | 8.4e-4 vs fast_mass/production (S_ij tabulation) |
-| Python `radial_series` (ℓ≤2) | 6 ms | truncation ≤0.45% vs exact mass sum |
-| C++ `Shear1hRadialSeries.so` | 7 ms | 1.6e-4 vs Python (interpolation scheme) |
+Shear, 12 bins × 10 radii (fiducial: Python `full_ltmz`, 149 ms;
+for `radial_series` the fiducial uses that strategy's own
+fixed-convention profile, doubled nodes):
 
-Projection shear, 180-point wall per sample (production frozen
-`ShearPrjFrozenPhysics.so` = 82 ms baseline; exact C++
-`DSigmaPrjEvaluator.so` = ~240 ms):
+| Path | Time | Error vs fiducial | Identity vs production |
+|---|---|---|---|
+| production `Shear1hMisSel.so` (`fast_mass`) | 9 ms | **8.4e-4** (S_ij tabulation) | — |
+| Python `fast_mass` | 74 ms | 8.4e-4 (same algorithm) | 3.1e-15 |
+| Python `radial_series` (ℓ≤2) | 6 ms | **3.7e-3 total** (tabulation + truncation + interpolation) | — |
+| C++ `Shear1hRadialSeries.so` | 7 ms | as Python + 1.6e-4 interpolation-scheme difference | — |
 
-| Backend | Time | Accuracy (measured) |
-|---|---|---|
-| Python `fast_mass` (exact z, no freeze) | 270 ms | **1.6e-11 vs exact C++**; 5.5e-5 vs frozen production |
+Projection shear, 180-point wall (production frozen module = 82 ms;
+**no `full_ltmz` fiducial exists yet for this observable** — the fully
+z-, mass-, and angle-resolved reference is the open matrix cell, and
+until it lands the exact-z evaluator is the best available reference):
+
+| Path | Time | Error vs best available reference | Identity check |
+|---|---|---|---|
+| production `ShearPrjFrozenPhysics.so` | 82 ms | 5.5e-5 (frozen-physics approx., measured) | — |
+| Python `fast_mass` (exact z, no freeze) | 270 ms | reference (pending `full_ltmz`) | 1.6e-11 vs exact `DSigmaPrjEvaluator.so` |
 
 Caution on the Cuhre knobs: `eps_rel = 1e-3` is 9× faster (0.36 s) but
 silently ~1% wrong in the lowest-richness bins (the near-delta HOD

@@ -18,10 +18,14 @@ of the `haloModel/dSigma_nfw` bilinear table and the gamma-kernel
 `NFW_DSIGMA_MIS` reader).
 
 Validation (real extraction dump + in-pipeline smoke run, 12 bins × 10
-radii): **max |ratio − 1| vs `Shear1hMisSel.so` = 3.1e-15** — machine
-precision; any future drift here means a replica no longer matches the
-production conventions. Cost: 74 ms/sample (pure Python; the .so does
-the same sums in 9 ms).
+radii), under the namespace accuracy policy (accuracy vs the
+`full_ltmz` fiducial; production agreement is an identity check):
+
+- **accuracy: 8.4e-4 from the fiducial** — the production S_ij
+  tabulation error, inherited by construction;
+- algorithm identity: 3.1e-15 vs `Shear1hMisSel.so`; any future drift
+  here means a replica no longer matches the production conventions.
+  Cost: 74 ms/sample (pure Python; the .so does the same sums in 9 ms).
 
 DataBlock contract: see the module docstring (`shear1h_fast_mass.py`);
 output `shear1h_fast_mass/vals` (hardcoded section, bin slow / R fast).

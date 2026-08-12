@@ -76,7 +76,11 @@ plus per-bin diagnostics `norm, y_eff, mu2, mu3`.
    truncation vs the exact fixed-GL mass integral of the same profile
    family, all 12 pinned bins on the production radial grid:
    **ℓ ≤ 2 max 0.450%** (tol 0.75%), ℓ ≤ 3 max 0.752% (tol 1.0%) —
-   matching the study's real-pipeline Idea-2 numbers;
+   matching the study's real-pipeline Idea-2 numbers. Under the
+   namespace accuracy policy (vs the doubled-node `full_ltmz` fiducial
+   with this strategy's own fixed-convention profile), the **total**
+   error — S_ij tabulation + truncation + interpolation — is
+   **3.7e-3 max** over the same grid;
 4. reported, not asserted: max shape deviation vs `Shear1hMisSel.so`
    is 5.2–10.1% per bin. This is the **disclosed centred-profile
    convention gap**, not a series error: this family uses the fixed
