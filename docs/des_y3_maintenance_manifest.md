@@ -7,6 +7,12 @@ This document implements Phase 1 of the
 current DES Y3 validation baseline without moving or modifying any source,
 module, model, test, CMake target, or runtime path.
 
+The layout proposal was approved on 2026-08-11 (see its Status section), so
+the six stages below are now the standing validation baseline for Phase 2
+work under `src/pipelines/des_y3/`. The Phase 1 boundary at the end of this
+document still holds for the baseline itself: Phase 2 adds new
+implementations next to these stages and never edits them.
+
 The source contracts below were audited against `y3_cluster_cpp` commit
 `29949bdfecda00eea938eae194ac9f3a1d5fad1e` on 2026-08-11. The external
 pipeline is pinned independently below. For runtime options, the pinned
