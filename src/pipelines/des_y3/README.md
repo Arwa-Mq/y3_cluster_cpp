@@ -15,14 +15,19 @@ des_y3/
 │                                convention-exact against src/models/*.hh
 └── observables/
     ├── number_counts/
+    │   ├── fast_mass/python/    exact z contraction, W(lnM) outside the operator
     │   └── full_ltmz/
     │       ├── python/          fixed-GL reference (per-(M,z) lt brackets)
     │       ├── cpp/             NumCountsFullLtmz.so (adaptive Cuhre)
     │       └── cuda/            NumCountsFullLtmzGpu.so (PAGANI)
-    └── shear_1h2h/
-        └── radial_series/
-            ├── python/          offline U_ell generator + moment evaluator
-            └── cpp/             Shear1hRadialSeries.so (same data, GSL interp)
+    ├── shear_1h2h/
+    │   ├── fast_mass/python/    exact z contraction + direct GL mass sum
+    │   ├── full_ltmz/python/    explicit (lt, lnM, z) x production profile
+    │   └── radial_series/
+    │       ├── python/          offline U_ell generator + moment evaluator
+    │       └── cpp/             Shear1hRadialSeries.so (same data, GSL interp)
+    └── shear_projection/
+        └── fast_mass/python/    exact-z port of ShearPrjCore (no freeze)
 ```
 
 Ground rules (from the approved proposal):
@@ -51,6 +56,7 @@ production timing by the plan):
 
 | Backend | Time | Accuracy (measured) |
 |---|---|---|
+| Python `fast_mass` | 5 ms | **2.4e-15 vs production** (same algorithm) |
 | Python `full_ltmz` (fixed GL 96×64×32) | 83 ms | 7.6e-4 vs production |
 | C++ `full_ltmz` (Cuhre, `eps_rel` 1e-4) | 3.1 s | 4.9e-4 vs Python; reported err 1.0e-4 |
 | CUDA `full_ltmz` (PAGANI, 1×A100) | 2.0 s | 6.0e-5 vs C++; reported err 0.7–1.0e-4 |
@@ -60,8 +66,18 @@ exact-GL = 9 ms baseline):
 
 | Backend | Time | Accuracy (measured) |
 |---|---|---|
+| Python `fast_mass` | 74 ms | **3.1e-15 vs production** (same algorithm) |
+| Python `full_ltmz` | 149 ms | 8.4e-4 vs fast_mass/production (S_ij tabulation) |
 | Python `radial_series` (ℓ≤2) | 6 ms | truncation ≤0.45% vs exact mass sum |
 | C++ `Shear1hRadialSeries.so` | 7 ms | 1.6e-4 vs Python (interpolation scheme) |
+
+Projection shear, 180-point wall per sample (production frozen
+`ShearPrjFrozenPhysics.so` = 82 ms baseline; exact C++
+`DSigmaPrjEvaluator.so` = ~240 ms):
+
+| Backend | Time | Accuracy (measured) |
+|---|---|---|
+| Python `fast_mass` (exact z, no freeze) | 270 ms | **1.6e-11 vs exact C++**; 5.5e-5 vs frozen production |
 
 Caution on the Cuhre knobs: `eps_rel = 1e-3` is 9× faster (0.36 s) but
 silently ~1% wrong in the lowest-richness bins (the near-delta HOD

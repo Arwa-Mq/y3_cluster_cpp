@@ -246,6 +246,30 @@ class SelStack:
         return self._interps[b](np.stack([z_b, lnM_b], axis=-1))
 
 
+class Bilinear2D:
+    """Generic clamped-bilinear replica of make_Interp2D over a section.
+
+    C++ convention: Interp2D(xs, ys, zs) with the value table stored
+    rows = y, cols = x; queries are clamped to the domain.
+    """
+
+    def __init__(self, source, section, xkey, ykey, valkey):
+        self._x = source.array(section, xkey)
+        self._y = source.array(section, ykey)
+        vals = np.asarray(source.array(section, valkey), dtype=float)
+        if vals.shape != (self._y.size, self._x.size):
+            vals = vals.reshape(self._y.size, self._x.size)
+        self._interp = RegularGridInterpolator(
+            (self._y, self._x), vals, method="linear",
+            bounds_error=False, fill_value=None)
+
+    def __call__(self, x, y):
+        x = np.clip(np.asarray(x, dtype=float), self._x[0], self._x[-1])
+        y = np.clip(np.asarray(y, dtype=float), self._y[0], self._y[-1])
+        y_b, x_b = np.broadcast_arrays(y, x)
+        return self._interp(np.stack([y_b, x_b], axis=-1))
+
+
 class SigmaCritInv:
     """Source-averaged Sigma_crit^-1(z_lens), linear with edge clamping."""
 

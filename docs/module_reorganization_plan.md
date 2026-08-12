@@ -140,6 +140,16 @@ A number-count calculation in which richness and redshift have been
 marginalized or tabulated before the final mass integral. For counts the
 operator is $f=1$, so no radial approximation is needed.
 
+Extension (plan owner, 2026-08-12): the same name also covers the
+shear observables' exact-redshift-contraction fast path — the $z$
+integral (and for the projection observable the per-$(\theta,M)$
+clustered weight) done exactly on fixed GL nodes *outside* the radial
+operator, with no radial-series truncation and no frozen-physics
+approximation. This is what the production `Shear1hMisSel`
+(`method = exact`) and the exact `ShearPrjCore` diagnostics compute;
+`fast_mass` implementations under the namespace state that algorithm
+explicitly per observable.
+
 ### `radial_series`
 
 This is the fast strategy for shear observables. It has three distinct

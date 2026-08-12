@@ -70,6 +70,7 @@ for _p in Path(__file__).resolve().parents:
         break
 
 from des_y3.shared import datablock_models as dm
+from des_y3.shared import full_ltmz_core
 from des_y3.shared import sel_kernels
 
 OUTPUT_SECTION = "numcounts_full_ltmz"
@@ -83,41 +84,18 @@ def compute_counts(bins, mor, plob_splines, hmf, dv, *,
     ``bins`` is a dict of equal-length arrays (lam_min, lam_max, zob_min,
     zob_max, sigma_z); ``hmf`` and ``dv`` are callables with the shared
     datablock_models conventions. Returns (n_bins,) expected counts.
+
+    The (lambda_true, z) contraction itself lives in the shared
+    full_ltmz core (des_y3.shared.full_ltmz_core), which the shear
+    full_ltmz backend contracts against its radial profile instead of
+    against 1.
     """
-    sf = sel_kernels.load()
-
-    z_x, z_w = dm.gl_nodes(zt_low, zt_high, n_z)
-    lnm_x, lnm_w = dm.gl_nodes(lnm_low, lnm_high, n_lnm)
-    gl_t, gl_w = np.polynomial.legendre.leggauss(n_q)
-
-    # Per-(M,z) lambda_tr GL bracket, nodes, and HOD density — the
-    # maintained sel_function machinery evaluated on *our* GL grids.
-    lam_k, w_k, p_mz, degenerate = sf._compute_lam_nodes_and_P_HOD(
-        lnm_x, z_x, mor, gl_t, gl_w, L=l_lam)
-
-    # EMG kernel K_i by CDF differencing at the unique bin edges.
-    mu_p, sig_p, tau_p, fprj_p = sf._plob_params(lam_k, z_x, plob_splines)
-    lam_min = np.asarray(bins["lam_min"], dtype=float)
-    lam_max = np.asarray(bins["lam_max"], dtype=float)
-    edges = np.unique(np.concatenate([lam_min, lam_max]))
-    cdfs = sf._cdf_lob_stacked(edges, mu_p, sig_p, tau_p, fprj_p)
-
-    # z-only factors and the (lnM, z) abundance plane.
-    zfac = z_w * dv(z_x) * dm.omega_z_des(z_x)
-    base_kq = hmf(lnm_x[:, None], z_x[None, :]) * zfac[None, :]
-
-    n_bins = lam_min.size
-    vals = np.empty(n_bins)
-    for b in range(n_bins):
-        lo = int(np.searchsorted(edges, lam_min[b]))
-        hi = int(np.searchsorted(edges, lam_max[b]))
-        k_i = cdfs[hi] - cdfs[lo]
-        s_kq = np.sum(w_k * k_i * p_mz, axis=-1)
-        s_kq = np.where(degenerate, 0.0, s_kq)
-        k_j = sf._K_j(z_x, float(bins["zob_min"][b]),
-                      float(bins["zob_max"][b]), float(bins["sigma_z"][b]))
-        vals[b] = lnm_w @ ((base_kq * s_kq) @ k_j)
-    return vals
+    lnm_x, lnm_w, weights = full_ltmz_core.full_ltmz_mass_weights(
+        bins, mor, plob_splines, hmf, dv, sci=None,
+        zt_low=zt_low, zt_high=zt_high,
+        lnm_low=lnm_low, lnm_high=lnm_high,
+        n_lnm=n_lnm, n_z=n_z, n_q=n_q, l_lam=l_lam)
+    return weights @ lnm_w
 
 
 # ---------------------------------------------------------------------------
