@@ -72,6 +72,9 @@ add_subdirectory(
 add_subdirectory(
   ${CMAKE_SOURCE_DIR}/src/pipelines/des_y3/observables/shear_projection/full_ltmz/cuda
   ${CMAKE_CURRENT_BINARY_DIR}/des_y3_shear_prj_full_ltmz_cuda)
+add_subdirectory(
+  ${CMAKE_SOURCE_DIR}/src/pipelines/des_y3/observables/shear_projection/fast_mass/cuda
+  ${CMAKE_CURRENT_BINARY_DIR}/des_y3_shear_prj_frozen_cuda)
 # Many of these are historical
 # add_subdirectory(DESxSPTModule)
 # add_subdirectory(sigma_kappa_y1)

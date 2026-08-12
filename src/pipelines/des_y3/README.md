@@ -34,7 +34,8 @@ des_y3/
     └── shear_projection/
         ├── fast_mass/
         │   ├── python/          exact-z port of ShearPrjCore (no freeze)
-        │   └── cpp/             ShearPrjFastMass.so (one core, both observables)
+        │   ├── cpp/             ShearPrjFastMass.so (one core, both observables)
+        │   └── cuda/            ShearPrjFrozenGpu.so (frozen machinery, kernel contraction)
         └── full_ltmz/cuda/      DSigmaPrjFullLtmzGpu.so (PAGANI over ln θ, z, lnM)
 ```
 
@@ -105,7 +106,7 @@ fiducial widePlanck point, pinned 12-bin wall; times per MCMC sample.
 | `fast_mass` / Python (exact z, no freeze) | 270 ms | best available reference | identity 1.0e-11 vs C++ |
 | `fast_mass` / C++ (`ShearPrjFastMass.so`) | 154 ms | best available reference | 9.9e-12 vs exact `dsigma_prj` evaluator (same core); both observables in one pass |
 | `fast_mass` / frozen production | 82 ms | 5.5e-5 from exact | the frozen-physics approximation, measured |
-| `fast_mass` / CUDA | — | — | planned: batched-contraction evaluator over the device quad::Interp tables (projected ~10–20 ms/sample); the PAGANI module belongs to full_ltmz, not here |
+| `fast_mass` / CUDA (`ShearPrjFrozenGpu.so`, frozen machinery) | **8 ms** | 1.5e-11 vs production frozen (machine precision) | the mock_buzzard frozen algorithm with the ΔΣ_mis cache + mass contraction as one CUDA kernel; 10× over the 81 ms production module; runs on a nearly-full shared GPU (few-MB footprint) |
 | `radial_series` | — | — | planned: U_ℓ(x, x_θ) tables with the θ coordinate retained (plan §radial_series) |
 
 Caution on the Cuhre knobs: `eps_rel = 1e-3` is 9× faster (0.36 s) but
