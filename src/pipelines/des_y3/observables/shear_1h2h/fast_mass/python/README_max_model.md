@@ -26,6 +26,15 @@ tabulation is still what makes it "fast_mass". A z-resolved
 `full_ltmz` variant and an adaptive reference share the same structure
 (`full_ltmz_core.full_ltmz_mass_z_weights`).
 
+> ⚠ **The two-halo table itself needs debugging before this arm is used
+> for science** — see [docs/dsigma_hh_debug_flag.md](../../../../../../../docs/dsigma_hh_debug_flag.md):
+> the NaNs are an explicit `np.where(dSigma < 0, nan, ...)` clip (60% of
+> the table), the z axis is degenerate (`Sigma_hh` identical at every z
+> because the producer's z loop drops the per-z power spectrum), and the
+> exclusion terms use dummy halo mass/concentration. This module is
+> validated against its own reference, but it inherits whatever
+> `dSigma_hh` provides.
+
 **Two-halo NaNs are expected** at low radii (the Hankel-transform
 producer leaves ΔΣ_hh undefined there — in this dump 3850/6400 table
 entries, everything below R ≈ 2.5 cMpc/h). They are zero-filled before
