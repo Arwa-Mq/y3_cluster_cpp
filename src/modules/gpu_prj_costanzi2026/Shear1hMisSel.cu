@@ -87,6 +87,11 @@ public:
     zo_low_  = pt[2];
     zo_high_ = pt[3];
     radius_  = pt[4];
+
+    // Miscentering R_mis = tau_mis * R_lambda(lambda^ob) depends on the
+    // richness bin, not on the integration variables -- push the bin's
+    // arithmetic centre into gamma_1h_ each time the grid point changes.
+    gamma_1h_->set_lob_centre(0.5 * (lo_low_ + lo_high_));
   }
 
   __host__ __device__ double

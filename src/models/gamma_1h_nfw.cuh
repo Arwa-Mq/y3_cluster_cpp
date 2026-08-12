@@ -1,13 +1,33 @@
 #ifndef Y3_CLUSTER_GAMMA_1H_NFW_CUH
 #define Y3_CLUSTER_GAMMA_1H_NFW_CUH
 //
-// This file defines the GPU-compatible 1-halo shear model, including miscentering.
-// IN progress: miscentering 
+// This file defines the GPU-compatible 1-halo shear model, including
+// miscentering.
+//
+// DES-Y3 redMaPPer centring is imperfect: a fraction f_mis of clusters
+// are offset from the true halo centre by a 2-D radial distance R_mis
+// drawn from a Gamma/Rayleigh-shaped kernel with characteristic scale
+// R_mis = tau_mis * R_lambda(lambda^ob) (Zhang et al. 2019 measurement;
+// see arXiv:2002.11124 Sec. "Cluster centering": f_cen = 0.75 +/- 0.08,
+// tau_mis = 0.17 +/- 0.04). The lensing observable is a two-component
+// mixture:
+//
+//     DSigma_cl(R | M, z) = (1 - f_mis) * DSigma_NFW(R, M)
+//                         + f_mis      * DSigma_mis(R, M; tau_mis R_lambda)
+//
+// This mirrors the CPU reference implementation in
+// src/modules/num_counts_sel/lensing_weights.hh (Shear1hMisWeight /
+// DSigma1hMisWeight), which uses the same NFW_DSIGMA_MIS machinery with
+// the "gamma" kernel. red_shear_prj instead uses the "single" (delta
+// function) kernel for its own miscentering table
+// (sigma_prj_gpu_t.cuh) because its theta integral already plays the
+// role of the R_mis integration -- the two do not double-count.
 //
 #include "cosmosis/datablock/datablock.hh"
 #include "cosmosis/datablock/ndarray.hh"
 #include "common/cuda/Interp2D.cuh"
 #include "models/ez.hh"
+#include "models/nfw_dsigma_mis.cuh"
 #include "utils/make_interp_2d.cuh"
 #include "utils/primitives.hh"
 
@@ -21,19 +41,6 @@ namespace y3_cuda {
       return make_Interp2D(sample, "haloModel", "r_sigma", "lnM", "dSigma_nfw");
     }
 
-    inline quad::Interp2D make_dsigma_mis_or_cen(cosmosis::DataBlock& sample)
-    {
-      // JOHNNEY NEED TO CHECK
-      // If the pipeline publishes a precomputed miscentered DeltaSigma table,use it. 
-      //Otherwise fall back to dSigma_nfw so the code still compiles
-      // and gives the old centred result when no miscentering table exists.
-      
-      if (sample.has_val("haloModel", "dSigma_mis")) {
-        return make_Interp2D(sample, "haloModel", "r_sigma", "lnM", "dSigma_mis");
-      }
-      return make_dsigma_nfw(sample);
-    }
-
     inline double read_or_default(cosmosis::DataBlock& sample,
                                   char const* section,
                                   char const* name,
@@ -41,15 +48,23 @@ namespace y3_cuda {
     {
       return sample.has_val(section, name) ? sample.view<double>(section, name) : fallback;
     }
+
+    // R_lambda(lambda^ob) = (lambda^ob / 100)^0.2  [h^-1 Mpc], matching
+    // src/modules/num_counts_sel/lensing_weights.hh's mis_detail::R_lambda.
+    inline double R_lambda(double lob) { return std::pow(lob / 100.0, 0.2); }
   }
 
   class GAMMA_1H_NFW {
   private:
     quad::Interp2D _dsigma_nfw;
-    quad::Interp2D _dsigma_mis;
     quad::Interp2D _sigma_crit_inv;
-    double f_mis_ = 0.22;
-    bool has_mis_table_ = false;
+    NFW_DSIGMA_MIS _dsigma_mis;
+    double f_mis_   = 0.22;
+    double tau_mis_ = 0.17;
+    // tau_mis * R_lambda for the richness bin currently being integrated.
+    // Wall-grid point-constant (set from the bin edges, not an
+    // integration variable) -- see set_lob_centre().
+    double r_mis_ = 0.17 * gamma_1h_detail::R_lambda(25.0);
 
   public:
     size_t
@@ -57,26 +72,12 @@ namespace y3_cuda {
     {
       size_t size = 0;
       size += _dsigma_nfw.get_device_mem_footprint();
-      size += _dsigma_mis.get_device_mem_footprint();
       size += _sigma_crit_inv.get_device_mem_footprint();
       return size;
     }
 
-    GAMMA_1H_NFW(quad::Interp2D const& dsigma_nfw,
-                 quad::Interp2D const& dsigma_mis,
-                 quad::Interp2D const& sigma_crit_inv,
-                 double f_mis,
-                 bool has_mis_table)
-      : _dsigma_nfw(dsigma_nfw),
-        _dsigma_mis(dsigma_mis),
-        _sigma_crit_inv(sigma_crit_inv),
-        f_mis_(f_mis),
-        has_mis_table_(has_mis_table)
-    {}
-
     explicit GAMMA_1H_NFW(cosmosis::DataBlock& sample)
       : _dsigma_nfw(gamma_1h_detail::make_dsigma_nfw(sample))
-      , _dsigma_mis(gamma_1h_detail::make_dsigma_mis_or_cen(sample))
       // sigma_crit_inv shape (n_z, n_r): z rows, r cols. Call as clamp(r, z).
       , _sigma_crit_inv(make_Interp2D(sample,
                                       "sigmaCritInv",
@@ -85,16 +86,32 @@ namespace y3_cuda {
                                       "z",
                                       "sigmaCritInv",
                                       "sigma_crit_inv"))
+      , _dsigma_mis(4.0, 2.77533742639e+11, std::string("gamma"))
       , f_mis_(gamma_1h_detail::read_or_default(sample, "miscentering", "f_mis", 0.22))
-      , has_mis_table_(sample.has_val("haloModel", "dSigma_mis"))
-    {}
+      , tau_mis_(gamma_1h_detail::read_or_default(sample, "miscentering", "tau_mis", 0.17))
+    {
+      // rho_mean normalisation, matching NFW_DSIGMA_MIS's other GPU
+      // caller (shear_prj's sigma_prj_gpu_t.cuh) and the CPU reference.
+      double const omega_m = sample.view<double>("cosmological_parameters", "omega_M");
+      _dsigma_mis.set_rho_mult(omega_m);
+      r_mis_ = tau_mis_ * gamma_1h_detail::R_lambda(25.0);
+    }
+
+    // Called once per wall-grid point (from Shear1hMisSel::set_grid_point)
+    // whenever the richness bin changes, with the bin's own arithmetic
+    // centre lob_centre = 0.5*(lo_low + lo_high).
+    void
+    set_lob_centre(double lob_centre)
+    {
+      r_mis_ = tau_mis_ * gamma_1h_detail::R_lambda(lob_centre);
+    }
 
     __device__ __host__ double
     operator()(double r, double lnM, double zt) const
     /* r in h^-1 Mpc */ /* M in h^-1 M_solar, represented by lnM */
     {
       double const dsigma_cen = _dsigma_nfw.clamp(r, lnM);
-      double const dsigma_mis = has_mis_table_ ? _dsigma_mis.clamp(r, lnM) : dsigma_cen;
+      double const dsigma_mis = _dsigma_mis(r, r_mis_, lnM);
 
       // Full 1-halo DeltaSigma mixture:
       // DeltaSigma_cl = (1 - f_mis) DeltaSigma_NFW + f_mis DeltaSigma_mis.
