@@ -432,19 +432,22 @@ This phase changes documentation only and is complete.
 
 ### Phase 2: Add future implementations
 
-Progress (2026-08-11): the namespace exists at `src/pipelines/des_y3/`
-with its shared Python model layer, and the first two implementations
-have landed with their validation records in their own READMEs:
+Progress (2026-08-11/12): the namespace exists at `src/pipelines/des_y3/`
+with its shared Python model layer, and the first implementations have
+landed with their validation records in their own READMEs:
 
-- number counts, `full_ltmz`, Python
-  (`observables/number_counts/full_ltmz/python/`), validated against
-  `NumCountsSel.so` to 7.6e-4 across the 12 pinned bins;
-- one-halo miscentred shear, `radial_series`, Python
-  (`observables/shear_1h2h/radial_series/python/`), with the offline
-  $U_\ell$ tables generated and committed under `data/radial_series/`
-  and truncation validated to 0.45% ($\ell\le2$) on the 12 real bins.
+- number counts, `full_ltmz`: Python fixed-GL reference (7.6e-4 vs
+  `NumCountsSel.so` across the 12 pinned bins), C++ adaptive-Cuhre
+  backend (4.9e-4 vs the Python reference at `eps_rel = 1e-4`), and a
+  CUDA/PAGANI backend
+  (`observables/number_counts/full_ltmz/{python,cpp,cuda}/`);
+- one-halo miscentred shear, `radial_series`: Python and C++ backends
+  (`observables/shear_1h2h/radial_series/{python,cpp}/`), with the
+  offline $U_\ell$ tables generated and committed under
+  `data/radial_series/`, truncation validated to 0.45% ($\ell\le2$) on
+  the 12 real bins, and backend equivalence at 1.6e-4.
 
-Neither is a production entry point; the production stages are
+None of these is a production entry point; the production stages are
 untouched.
 
 - Add one observable and one integration strategy at a time under the new

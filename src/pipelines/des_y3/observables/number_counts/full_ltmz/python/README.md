@@ -72,3 +72,13 @@ pinned bins:
 
 Reference cost is not a goal (plan §`full_ltmz`), but the module is cheap
 enough (<0.1 s) to co-run with production for cross-checks.
+
+## Other backends
+
+The same integral is implemented as adaptive integrations in
+[`../cpp/`](../cpp/README.md) (Cuhre, `NumCountsFullLtmz.so`; agrees with
+this reference to 4.9e-4 at `eps_rel = 1e-4`) and
+[`../cuda/`](../cuda/README.md) (PAGANI, `NumCountsFullLtmzGpu.so`).
+Three backends, three different quadrature strategies over one set of
+kernels — their mutual agreement is the strongest internal check the
+`full_ltmz` contract has.

@@ -77,6 +77,9 @@ at text-roundtrip precision (~1e-12).
 A CPU-only login-node build (`cmake -DCMAKE_BUILD_TYPE=Release` without
 `-DUSE_CUDA`) also compiles this module and its test; it was used for
 the first validation pass of this backend (see the commit message).
+The pinned-toolchain re-run happened 2026-08-12 in the CUDA-configured
+build (`/pscratch/sd/j/jesteves/y3cpp_gpu_build`, cudatoolkit 12.2 +
+gcc 12.3): module and test build cleanly and the ctest passes.
 
 ## CUDA
 

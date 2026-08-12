@@ -15,7 +15,10 @@ des_y3/
 │                                convention-exact against src/models/*.hh
 └── observables/
     ├── number_counts/
-    │   └── full_ltmz/python/    full (lambda_true, lnM, z) reference counts
+    │   └── full_ltmz/
+    │       ├── python/          fixed-GL reference (per-(M,z) lt brackets)
+    │       ├── cpp/             NumCountsFullLtmz.so (adaptive Cuhre)
+    │       └── cuda/            NumCountsFullLtmzGpu.so (PAGANI)
     └── shear_1h2h/
         └── radial_series/
             ├── python/          offline U_ell generator + moment evaluator
