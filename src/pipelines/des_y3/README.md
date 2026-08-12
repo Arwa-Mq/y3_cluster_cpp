@@ -22,8 +22,10 @@ des_y3/
     │       └── cuda/            NumCountsFullLtmzGpu.so (PAGANI)
     ├── shear_1h2h/
     │   ├── fast_mass/
-    │   │   ├── python/          exact z contraction + direct GL mass sum
-    │   │   └── cpp/             Shear1hFastMass.so (SelGLCore + mixture)
+    │   │   ├── python/          exact z contraction + direct GL mass sum;
+    │   │   │                    shear1h2h_max.py = traditional max model
+    │   │   └── cpp/             Shear1hFastMass.so (SelGLCore + mixture),
+    │   │                        Shear1h2hMax.so (traditional max model)
     │   ├── full_ltmz/
     │   │   ├── python/          explicit (lt, lnM, z) x production profile
     │   │   ├── cpp/             Shear1hFullLtmz.so (adaptive Cuhre per (bin,R))
@@ -96,6 +98,7 @@ fiducial widePlanck point, pinned 12-bin wall; times per MCMC sample.
 | `radial_series` / Python (ℓ≤2) | 6 ms | 3.7e-3 total | tabulation + truncation + interp, same-profile fiducial |
 | `radial_series` / C++ (`Shear1hRadialSeries.so`) | 7 ms | 3.7e-3 + 1.6e-4 | interp-scheme difference vs Python |
 | `radial_series` / CUDA | — | — | not warranted (3 table lookups per point) |
+| **max model** (traditional 1h+2h) / C++ (`Shear1h2hMax.so`) ⚠ | **11 ms** | 6.0e-15 vs Python (identity); inherits its 8.3e-4 vs the adaptive reference | z-resolved weights + max(1h, b·2h), all tables via Interp2D; ΔΣ_hh NaNs sanitized before interpolation |
 | **max model** (traditional 1h+2h) / Python ⚠ | 83 ms | 8.3e-4 fast path; 4.9e-5 GL — vs its adaptive z-resolved reference; **ΔΣ_hh itself needs debugging, see docs/dsigma_hh_debug_flag.md** | `shear1h2h_max`: max(ΔΣ_cl, b·ΔΣ_hh); z stays inside the mass integral (2h is z-dependent); needs `compute_lensing_2h = T`; 2h NaNs at low R zero-filled |
 
 ### Projection shear (180-point wall; production `ShearPrjFrozenPhysics.so` = 82 ms)

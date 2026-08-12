@@ -61,3 +61,17 @@ grid (R ≤ 5 cMpc/h) — the two-halo term only wins at the largest radii,
 as expected.
 
 Output: `shear1h2h_max/vals` (hardcoded section, bin slow / R fast).
+
+## C++ backend
+
+`../cpp/Shear1h2hMax.cc` (`Shear1h2hMax.so`) implements the same model:
+z-resolved weights built from the same immutable models, `b(lnM, z)`
+cached on the node grid, and the per-(bin, R) 1-halo/2-halo rows
+interpolated once each so the (lnM, z) double sum touches no
+interpolator. Every table goes through `Interp2D::clamp`, with the
+ΔΣ_hh NaNs sanitized to 0 *before* construction so they never enter the
+interpolation stencil.
+
+Measured: **11 ms/sample** (12 bins × 10 radii) and 6.0e-15 against the
+Python backend — comfortably inside the 50 ms budget, so no CUDA
+backend is warranted for this observable.

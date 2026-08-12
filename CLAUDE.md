@@ -240,6 +240,91 @@ These bit future-you; enforce in any new integrand:
   rho_mean), and miscentering kernel (gamma vs delta). See
   `validations/README.md` before validating changes there.
 
+## New implementations: `src/pipelines/des_y3/`
+
+New maintained work goes **here**, never into the production module
+directories. Layout is `observable -> integration strategy ->
+language/backend`, approved in `docs/module_reorganization_plan.md`;
+`src/pipelines/des_y3/README.md` carries the full matrix of what exists
+with measured accuracy and per-sample cost.
+
+Rules that bite if ignored:
+
+- **Nothing existing is modified.** Production entry points, `src/models`,
+  `src/utils` templates (`CosmoSIS*Module.hh`, `module_macros.hh`) are
+  immutable dependencies — new C++/CUDA drivers *instantiate* them.
+  Register new targets in `src/modules/CMakeLists.txt` via
+  `add_subdirectory(<pipelines path> <binary dir>)`.
+- **Always use the interpolation primitives** — `Interp1D`/`Interp2D`
+  (host) and `quad::Interp1D`/`Interp2D` (device, PAGANI `common/cuda`),
+  with `clamp()` queries. Never hand-roll interpolation; sanitize data
+  *before* handing it to the interpolator (see `dSigma_hh` below).
+- **Backends of one stage share an output section** (e.g. Python and C++
+  both write `shear1h2h_max/vals`), so they are interchangeable — but
+  CosmoSIS `put_val` does **not** overwrite: running two backends of the
+  same stage in one pipeline silently keeps the first writer's values.
+  Give a new backend its own section if you want to co-run for
+  comparison.
+- Python modules find the shared layer by walking up to
+  `src/pipelines` and importing `des_y3.shared` (replicas of `HMF_t`,
+  `DV_DO_DZ_t`, `OMEGA_Z_DES`, `SelGLCore`, the profile tables, and the
+  full_ltmz selection contraction).
+
+### Strategy names
+
+`full_ltmz` = explicit (λ_true, lnM, z) integration; `fast_mass` = the z
+integral contracted on fixed GL nodes *outside* the radial operator
+(counts and 1-halo shear; the projection's exact-z core too);
+`radial_series` = offline U_ℓ tables + population moments. Note the
+traditional 1h+2h **max model** keeps z *inside* the mass integral —
+its 2-halo term is z-dependent, so `fast_mass` there means "tabulated
+S_ij", not "z contracted".
+
+### Testing precision and cost
+
+Accuracy is always quoted against an **adaptive** `full_ltmz` reference
+(`des_y3/shared/full_ltmz_core.py::full_ltmz_mass_integral_adaptive`,
+reported error ≤ 1e-6), never against a production `.so` — production
+carries its own approximations (S_ij tabulation ~8e-4, frozen physics
+~5e-5). Agreement with production is reported separately as an
+*algorithm-identity* check. A fixed-GL implementation is never the
+reference; it gets certified against the adaptive one and then used as
+the fast stand-in.
+
+```bash
+source ~/cosmosis_init.sh                 # then override for this tree:
+export Y3_CLUSTER_CPP_DIR=$PSCRATCH/github/y3_cluster_cpp
+export PYTHONPATH=$Y3_CLUSTER_CPP_DIR:$PYTHONPATH
+export DES_CLUSTER_NERSC_DIR=$PSCRATCH/github/des-cluster-nersc
+
+# 1. produce a dump (real HMF/distances/selection at the fiducial point).
+#    docs/figs/real_pipeline_extract.ini is the base; add prj_params for
+#    modules needing plob_ltr_params, and compute_lensing_2h = T for any
+#    2-halo consumer.
+cosmosis docs/figs/real_pipeline_extract.ini
+
+# 2. per-implementation validators (offline, read the dump, immune to
+#    the put_val gotcha):
+python src/pipelines/des_y3/validate_against_fiducial.py       # the matrix report
+python .../<observable>/<strategy>/python/validate_*.py <dump_dir>
+
+# 3. cost: per-module timings come from `timing = T` in the ini —
+#    read them off the pipeline run, not from wall clock.
+```
+
+Build C++ backends in a CPU-only login-node build dir (works despite
+the GPU-node rule — no `-DUSE_CUDA`); CUDA backends need the pinned
+toolchain (`BUILDING.md`) in a **separate** build dir — do not
+reconfigure `release-build`, which is the CPU-only fast tree.
+
+### Known data defect
+
+`haloModel/dSigma_hh` (the two-halo lensing table) has three open bugs —
+60% NaN by construction, a degenerate z axis, dummy exclusion halo
+parameters. See `docs/dsigma_hh_debug_flag.md`. Any traditional-shear
+(1h+2h) result is provisional until they are fixed; a *sum*-based 1h+2h
+model would propagate the NaNs through the whole mass integral.
+
 ## Python side
 
 - `y3_buzzard/halo_model_cosmosis.py` publishes `haloModel/bias` (Interp2D) and
