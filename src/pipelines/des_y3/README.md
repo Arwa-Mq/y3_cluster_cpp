@@ -29,7 +29,9 @@ des_y3/
     │       ├── python/          offline U_ell generator + moment evaluator
     │       └── cpp/             Shear1hRadialSeries.so (same data, GSL interp)
     └── shear_projection/
-        └── fast_mass/python/    exact-z port of ShearPrjCore (no freeze)
+        └── fast_mass/
+            ├── python/          exact-z port of ShearPrjCore (no freeze)
+            └── cpp/             ShearPrjFastMass.so (one core, both observables)
 ```
 
 Ground rules (from the approved proposal):
@@ -95,7 +97,8 @@ fiducial widePlanck point, pinned 12-bin wall; times per MCMC sample.
 | Strategy / backend | Time | Error vs reference | Notes |
 |---|---|---|---|
 | `full_ltmz` | — | — | **open cell**: needs a design decision (unfreeze ξ_NL's z argument? resolve the richness selection inside instead of the b_sel(θ) plateaus?) |
-| `fast_mass` / Python (exact z, no freeze) | 270 ms | best available reference | identity 1.6e-11 vs exact `DSigmaPrjEvaluator.so` (~240 ms) |
+| `fast_mass` / Python (exact z, no freeze) | 270 ms | best available reference | identity 1.0e-11 vs C++ |
+| `fast_mass` / C++ (`ShearPrjFastMass.so`) | 154 ms | best available reference | 9.9e-12 vs exact `dsigma_prj` evaluator (same core); both observables in one pass |
 | `fast_mass` / frozen production | 82 ms | 5.5e-5 from exact | the frozen-physics approximation, measured |
 | `radial_series` | — | — | planned: U_ℓ(x, x_θ) tables with the θ coordinate retained (plan §radial_series) |
 
