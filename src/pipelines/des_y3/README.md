@@ -52,20 +52,23 @@ never regenerated inside an MCMC sample.
 
 ## The matrix: accuracy and timing per measurement mode (2026-08-12)
 
-**Accuracy policy** (plan owner): accuracy is quoted against the
-**`full_ltmz` fiducial** — the fully explicit calculation, certified by
-internal convergence (doubling every quadrature node moves it ≤ 3.8e-4
-counts / ≤ 3.1e-4 shear; widening the λ bracket ≤ 1.4e-4) and by
-independent quadrature strategies agreeing. Production agreement is a
-separate *algorithm-identity* check. Runnable report:
-`validate_against_fiducial.py`. All numbers: real pipeline, fiducial
-widePlanck point, pinned 12-bin wall; times per MCMC sample.
+**Accuracy policy** (plan owner): the reference is the **adaptive**
+`full_ltmz` calculation (`full_ltmz_core.full_ltmz_mass_integral_adaptive`:
+vectorised adaptive mass integral, reported error ≤ 1e-6; mass limits
+with the lower bound at richness → 0 — the inverse scaling relation is
+invalid where scatter dominates — and the upper bound from the inverted
+scaling relation at 4·λ_max). A fixed-GL implementation is never the
+reference; it is certified against the adaptive one (3.5e-5 counts,
+4.9e-5 shear) and then used as the fast stand-in. Production agreement
+is a separate *algorithm-identity* check. All numbers: real pipeline,
+fiducial widePlanck point, pinned 12-bin wall; times per MCMC sample.
 
 ### Number counts (12 bins; production `NumCountsSel.so` = 6 ms)
 
 | Strategy / backend | Time | Error vs fiducial | Notes |
 |---|---|---|---|
-| `full_ltmz` / Python (fixed GL) | 83 ms | **fiducial** (self-conv. ≤ 3.8e-4) | |
+| `full_ltmz` / Python adaptive | 25 s | **reference** (reported err ≤ 1e-6) | |
+| `full_ltmz` / Python (fixed GL) | 83 ms | 3.5e-5 | certified by the adaptive reference |
 | `full_ltmz` / C++ (Cuhre, eps 1e-4) | 3.1 s | 4.9e-4 | inside fiducial band |
 | `full_ltmz` / CUDA (PAGANI, A100) | 2.0 s | 5.1e-4 | 6.0e-5 from C++ twin |
 | `fast_mass` / Python | 5 ms | 7.6e-4 | identity 2.4e-15 vs production |
@@ -77,7 +80,8 @@ widePlanck point, pinned 12-bin wall; times per MCMC sample.
 
 | Strategy / backend | Time | Error vs fiducial | Notes |
 |---|---|---|---|
-| `full_ltmz` / Python (fixed GL) | 149 ms | **fiducial** (self-conv. ≤ 3.1e-4) | |
+| `full_ltmz` / Python adaptive | 35 s | **reference** (reported err ≤ 1e-6) | |
+| `full_ltmz` / Python (fixed GL) | 149 ms | 4.9e-5 | certified by the adaptive reference |
 | `full_ltmz` / C++ (Cuhre, eps 1e-4) | 51 s | 3.3e-4 | 120 adaptive triples; all converged |
 | `full_ltmz` / CUDA (PAGANI) | — | — | planned (device haloModel interp needed) |
 | `fast_mass` / Python | 74 ms | 8.4e-4 | identity 3.1e-15 vs production |
