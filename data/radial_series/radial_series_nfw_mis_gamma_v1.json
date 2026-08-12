@@ -1,7 +1,7 @@
 {
   "name": "radial_series_nfw_mis_gamma_v1",
   "format_version": 1,
-  "generated": "2026-08-11",
+  "generated": "2026-08-12",
   "generator": "src/pipelines/des_y3/observables/shear_1h2h/radial_series/python/generate_radial_series_tables.py",
   "profile": {
     "family": "NFW centred (Wright & Brainerd 2000) + gamma-kernel miscentred, exactly the src/models/nfw_dsigma_mis.hh conventions",

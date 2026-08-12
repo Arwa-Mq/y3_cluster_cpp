@@ -195,6 +195,21 @@ target_include_directories(
   )
 add_test(interp_2d_test interp_2d_test)
 
+# radial_series C++ backend (src/pipelines/des_y3, Phase 2): table
+# loading, series assembly, and the NFW_DSIGMA_MIS amplitude
+# cross-check.  fmt::fmt comes in through nfw_dsigma_mis.hh.
+add_executable(shear1h_radial_series_test shear1h_radial_series.test.cc)
+target_link_libraries(
+  shear1h_radial_series_test PRIVATE testmain ${GSL_LIBRARIES} utils
+                                     cosmosis fmt::fmt
+  )
+target_include_directories(
+  shear1h_radial_series_test PRIVATE ${CMAKE_SOURCE_DIR}/src ${CUBACPP_DIR}
+                                     ${CMAKE_SOURCE_DIR}/externals
+                                     ${GSL_INCLUDE_DIR}
+  )
+add_test(shear1h_radial_series_test shear1h_radial_series_test)
+
 add_executable(mz_power_law_test mz_power_law.test.cc)
 target_link_libraries(mz_power_law_test PRIVATE testmain)
 target_include_directories(

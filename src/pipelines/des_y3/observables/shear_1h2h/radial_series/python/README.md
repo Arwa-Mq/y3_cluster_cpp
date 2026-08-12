@@ -38,9 +38,13 @@ contraction, population moments — replacing the experimental runtime
 | File | Role |
 |---|---|
 | `nfw_profile_family.py` | fixed profile conventions: r_s(M), A0(y), W&B shapes (float64 + mpmath), source-table reader |
-| `generate_radial_series_tables.py` | offline U_ℓ generator (first-principles, ~1e-9 smooth; see its docstring for why the noisy source table is not differentiated) |
+| `generate_radial_series_tables.py` | offline U_ℓ generator (first-principles, ~1e-9 smooth; see its docstring for why the noisy source table is not differentiated); also writes the text export the C++ backend reads |
 | `shear1h_radial_series.py` | CosmoSIS module (setup/execute/cleanup) + `RadialSeriesTable` loader + `evaluate_series` |
 | `validate_radial_series.py` | the four-check validation battery |
+| `compare_backends.py` | Python-cubic vs C++-bilinear equivalence (measured 1.6e-4) |
+
+A C++ backend with the same contract lives in [`../cpp/`](../cpp/README.md)
+(`Shear1hRadialSeries.so`).
 
 ## DataBlock contract
 

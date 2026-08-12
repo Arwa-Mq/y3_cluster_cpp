@@ -17,7 +17,9 @@ des_y3/
     ├── number_counts/
     │   └── full_ltmz/python/    full (lambda_true, lnM, z) reference counts
     └── shear_1h2h/
-        └── radial_series/python/  offline U_ell tables + moment evaluator
+        └── radial_series/
+            ├── python/          offline U_ell generator + moment evaluator
+            └── cpp/             Shear1hRadialSeries.so (same data, GSL interp)
 ```
 
 Ground rules (from the approved proposal):

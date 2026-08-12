@@ -44,6 +44,13 @@ add_subdirectory(sigma_prj_cpu)
 # Brute-force triple-integral N_i[1] reference (no miscentering, no photo-z)
 # used to validate the n_operator_sel family on the same datablock layout.
 add_subdirectory(num_counts_full)
+
+# des_y3 Phase 2 backends (docs/module_reorganization_plan.md): new
+# maintained implementations live under src/pipelines/des_y3 and are
+# registered here with explicit binary dirs.
+add_subdirectory(
+  ${CMAKE_SOURCE_DIR}/src/pipelines/des_y3/observables/shear_1h2h/radial_series/cpp
+  ${CMAKE_CURRENT_BINARY_DIR}/des_y3_radial_series_cpp)
 # Many of these are historical
 # add_subdirectory(DESxSPTModule)
 # add_subdirectory(sigma_kappa_y1)

@@ -387,9 +387,23 @@ def main():
     (outdir / f"{TABLE_NAME}.json").write_text(json.dumps(meta, indent=2)
                                                + "\n")
 
+    # Text export for the C++ backend (read_vector + GSL Interp2D):
+    # same values as the npz, in the data/nfw_off_center layout — 2-D
+    # tables stored with rows = lnxm and columns = lnx, so the row-major
+    # flattening is exactly the column-major (x-fastest) storage GSL's
+    # interp2d expects through the Interp2D vector constructor.
+    fmt2, fmt1 = "%.12e", "%.16e"
+    np.savetxt(outdir / f"{TABLE_NAME}_lnx.txt", out_lnx, fmt=fmt1)
+    np.savetxt(outdir / f"{TABLE_NAME}_lnxm.txt", OUT_LNXM, fmt=fmt1)
+    for ell in range(4):
+        np.savetxt(outdir / f"{TABLE_NAME}_u{ell}_mis.txt", u_mis[ell].T,
+                   fmt=fmt2)
+        np.savetxt(outdir / f"{TABLE_NAME}_u{ell}_cen.txt", u_cen_ell[ell],
+                   fmt=fmt1)
+
     print(json.dumps(checks, indent=2))
     print(f"wrote {npz_path} ({npz_path.stat().st_size/1e6:.1f} MB) "
-          f"in {time.time()-t0:.0f} s")
+          f"+ text export in {time.time()-t0:.0f} s")
 
 
 if __name__ == "__main__":
