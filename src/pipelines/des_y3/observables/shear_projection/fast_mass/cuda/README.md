@@ -33,3 +33,20 @@ demonstrably converged there yet; (2) the finding that **production
 knobs under-resolve the projection wall extremes at the ~2% level**
 applies to the production ShearPrjFrozenPhysics settings too and
 should be checked independently of this backend.
+
+## Relation to the earlier GPU projection module (avgGammaProjBu)
+
+The Buzzard-era `sigma_buzzard_y3/avgGammaProjBu.cu` integrates the
+*previous* projection observable in 3–5 s because PAGANI only sees
+three smooth selection dimensions (λ_ob, z_t, lnM): its two-halo term,
+miscentring, bias and Σ_crit⁻¹ all enter as pre-tabulated device
+interpolators (`DSIGMA_PROJ`). This module integrates the
+Costanzi-2026 selection-affected observable, where θ must be an
+explicit variable (b_sel(θ) and the per-z slab exclusion couple it to
+z) and no offline table exists yet — hence the ~100× cost. The design
+lesson is the plan's own: pre-tabulate the hard geometry (the fixed
+tailored-θ contraction of the fast_mass backends; ultimately the
+projection `radial_series` U-tables) and reserve adaptive integration
+for smooth dimensions — this backend's role is the independent
+cross-check, which is how it exposed the 2.3% wall-edge
+under-resolution of the production-knob grids.
