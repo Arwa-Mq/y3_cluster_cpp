@@ -24,7 +24,8 @@ des_y3/
     │   ├── fast_mass/python/    exact z contraction + direct GL mass sum
     │   ├── full_ltmz/
     │   │   ├── python/          explicit (lt, lnM, z) x production profile
-    │   │   └── cpp/             Shear1hFullLtmz.so (adaptive Cuhre per (bin,R))
+    │   │   ├── cpp/             Shear1hFullLtmz.so (adaptive Cuhre per (bin,R))
+    │   │   └── cuda/            Shear1hFullLtmzGpu.so (PAGANI)
     │   └── radial_series/
     │       ├── python/          offline U_ell generator + moment evaluator
     │       └── cpp/             Shear1hRadialSeries.so (same data, GSL interp)
@@ -85,7 +86,7 @@ fiducial widePlanck point, pinned 12-bin wall; times per MCMC sample.
 | `full_ltmz` / Python adaptive | 35 s | **reference** (reported err ≤ 1e-6) | |
 | `full_ltmz` / Python (fixed GL) | 149 ms | 4.9e-5 | certified by the adaptive reference |
 | `full_ltmz` / C++ (Cuhre, eps 1e-4) | 51 s | 3.3e-4 | 120 adaptive triples; all converged |
-| `full_ltmz` / CUDA (PAGANI) | — | — | planned (device haloModel interp needed) |
+| `full_ltmz` / CUDA (PAGANI, A100) | 32 s | 3.4e-4 | 8.4e-5 from the C++ Cuhre twin (job 56790321) |
 | `fast_mass` / Python | 74 ms | 8.4e-4 | identity 3.1e-15 vs production |
 | `fast_mass` / C++ | 9 ms | 8.4e-4 | **is** production `Shear1hMisSel.so` (`method=exact`) |
 | `radial_series` / Python (ℓ≤2) | 6 ms | 3.7e-3 total | tabulation + truncation + interp, same-profile fiducial |
