@@ -161,9 +161,16 @@ public:
     theta0_ = 0.5 * theta_lam;
   }
 
+  // First variable is ln(theta): the DSigma_mis feature at
+  // theta_R = R/D_A is ~1e-5 wide in linear theta for the smallest
+  // radii, and PAGANI silently returned 0 for ~20% of wall points on a
+  // linear-theta volume (statuses all converged) -- the same reason the
+  // fixed-GL core builds its theta grid in log theta. The exp/Jacobian
+  // makes every feature O(1) wide in the integration variable.
   __host__ __device__ double
-  operator()(double theta, double zt, double lnM) const
+  operator()(double lntheta, double zt, double lnM) const
   {
+    double const theta = exp(lntheta);
     double const sig = sigma_z_->clamp(zt);
     double const u = (zt - zob_) / sig;
     if (fabs(u) >= 1.0) return 0.0;
@@ -193,8 +200,8 @@ public:
 
     double const dsmis =
       omega_m_ * (*dsigma_mis_)(cur_R_, theta * d_a_o_, lnM);
-    return 2.0 * M_PI * sin(theta) * (*dv_do_dz_)(zt) * w_phot *
-           (*hmf_)(lnM, zt) * (1.0 + cl) * dsmis;
+    return theta * 2.0 * M_PI * sin(theta) * (*dv_do_dz_)(zt) * w_phot *
+           (*hmf_)(lnM, zt) * (1.0 + cl) * dsmis;   // x theta: dtheta = theta dlntheta
   }
 
   static char const* module_label() { return "DSigmaPrjFastMassGpu"; }
@@ -203,7 +210,7 @@ public:
   make_integration_volumes(cosmosis::DataBlock& cfg)
   {
     return y3_cuda::make_integration_volumes_wall_of_numbers(
-      cfg, module_label(), "theta", "zt", "lnm");
+      cfg, module_label(), "lntheta", "zt", "lnm");
   }
 
   static grid_t

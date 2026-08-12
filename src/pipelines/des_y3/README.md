@@ -103,7 +103,7 @@ fiducial widePlanck point, pinned 12-bin wall; times per MCMC sample.
 | `fast_mass` / Python (exact z, no freeze) | 270 ms | best available reference | identity 1.0e-11 vs C++ |
 | `fast_mass` / C++ (`ShearPrjFastMass.so`) | 154 ms | best available reference | 9.9e-12 vs exact `dsigma_prj` evaluator (same core); both observables in one pass |
 | `fast_mass` / frozen production | 82 ms | 5.5e-5 from exact | the frozen-physics approximation, measured |
-| `fast_mass` / CUDA | — | — | planned: the device-resident quad::Interp2D/3D infrastructure makes the per-slice contractions (~2.2M FMA + 0.7M lookups/sample) batchable into a few kernels — projected ~10× over the scalar C++ core, i.e. exact-z at ~10–20 ms/sample, cheaper than the frozen production module (82 ms) with no approximation. Custom CUDA evaluator (not a PAGANI integrand); host keeps the θ/z grid builders |
+| `fast_mass` / CUDA (`DSigmaPrjFastMassGpu.so`, PAGANI) | 95 s (eps 1e-3) | median 9.5e-4 vs refined GL reference; max 2.2% at the innermost radii (open convergence study) | log-θ integrand (linear θ silently returns 0 on 20% of points); found the production-knob GL settings under-resolve wall-edge radii by up to 2.3% — outermost radii: refined reference lands on PAGANI to 2e-4 |
 | `radial_series` | — | — | planned: U_ℓ(x, x_θ) tables with the θ coordinate retained (plan §radial_series) |
 
 Caution on the Cuhre knobs: `eps_rel = 1e-3` is 9× faster (0.36 s) but
