@@ -96,6 +96,7 @@ fiducial widePlanck point, pinned 12-bin wall; times per MCMC sample.
 | `radial_series` / Python (ℓ≤2) | 6 ms | 3.7e-3 total | tabulation + truncation + interp, same-profile fiducial |
 | `radial_series` / C++ (`Shear1hRadialSeries.so`) | 7 ms | 3.7e-3 + 1.6e-4 | interp-scheme difference vs Python |
 | `radial_series` / CUDA | — | — | not warranted (3 table lookups per point) |
+| **max model** (traditional 1h+2h) / Python | 83 ms | 8.3e-4 fast path; 4.9e-5 GL — vs its adaptive z-resolved reference | `shear1h2h_max`: max(ΔΣ_cl, b·ΔΣ_hh); z stays inside the mass integral (2h is z-dependent); needs `compute_lensing_2h = T`; 2h NaNs at low R zero-filled |
 
 ### Projection shear (180-point wall; production `ShearPrjFrozenPhysics.so` = 82 ms)
 

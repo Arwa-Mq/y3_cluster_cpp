@@ -113,3 +113,44 @@ class MisMixtureProfile:
         d_mis = self._mis(r_perp, self.r_mis(bin_index), lnM,
                           rho_mult=self.omega_m)
         return (1.0 - self.f_mis) * d_cen + self.f_mis * d_mis
+
+
+class MaxMixtureProfile:
+    """Traditional 1h+2h shear profile: the SIG_MAX/GAMMA_MAX composition
+    with the modern haloModel tables,
+
+        Phi_max(b, R, lnM, z) = max( DSigma_cl(R, lnM | bin b),
+                                     bias(lnM, z) * dSigma_hh(R, z) )
+
+    where DSigma_cl is the production miscentred 1-halo mixture
+    (MisMixtureProfile; set include_miscentering=False for the pure
+    centred term) and the two-halo term is z-dependent — callers must
+    keep z inside the mass integral (see
+    full_ltmz_core.full_ltmz_mass_z_weights).
+    """
+
+    def __init__(self, source, *, lob_centers, f_mis, tau_mis, omega_m,
+                 include_miscentering=True):
+        if include_miscentering:
+            self._one = MisMixtureProfile(source, lob_centers=lob_centers,
+                                          f_mis=f_mis, tau_mis=tau_mis,
+                                          omega_m=omega_m)
+        else:
+            self._one = MisMixtureProfile(source, lob_centers=lob_centers,
+                                          f_mis=0.0, tau_mis=tau_mis,
+                                          omega_m=omega_m)
+        # local import to avoid a cycle at module import time
+        from . import datablock_models as _dm
+        self._bias = _dm.Bilinear2D(source, "halomodel", "lnm", "z", "bias")
+        # The Hankel-based producer leaves dSigma_hh undefined (NaN) at
+        # low radii (plan owner: expected); the max model resolves to
+        # the 1-halo term there, so NaN -> 0 before interpolation is
+        # the faithful treatment (b*0 never wins the max where 1h is
+        # finite).
+        self._hh = _dm.Bilinear2D(source, "halomodel", "r_sigma", "z",
+                                  "dsigma_hh", nan_fill=0.0)
+
+    def __call__(self, b, r_perp, lnM, z):
+        one = self._one(b, r_perp, lnM)
+        two = self._bias(lnM, z) * self._hh(r_perp, z)
+        return np.maximum(one, two)

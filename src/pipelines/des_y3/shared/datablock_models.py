@@ -253,12 +253,14 @@ class Bilinear2D:
     rows = y, cols = x; queries are clamped to the domain.
     """
 
-    def __init__(self, source, section, xkey, ykey, valkey):
+    def __init__(self, source, section, xkey, ykey, valkey, nan_fill=None):
         self._x = source.array(section, xkey)
         self._y = source.array(section, ykey)
         vals = np.asarray(source.array(section, valkey), dtype=float)
         if vals.shape != (self._y.size, self._x.size):
             vals = vals.reshape(self._y.size, self._x.size)
+        if nan_fill is not None:
+            vals = np.where(np.isfinite(vals), vals, float(nan_fill))
         self._interp = RegularGridInterpolator(
             (self._y, self._x), vals, method="linear",
             bounds_error=False, fill_value=None)
