@@ -103,7 +103,7 @@ fiducial widePlanck point, pinned 12-bin wall; times per MCMC sample.
 | `fast_mass` / Python (exact z, no freeze) | 270 ms | best available reference | identity 1.0e-11 vs C++ |
 | `fast_mass` / C++ (`ShearPrjFastMass.so`) | 154 ms | best available reference | 9.9e-12 vs exact `dsigma_prj` evaluator (same core); both observables in one pass |
 | `fast_mass` / frozen production | 82 ms | 5.5e-5 from exact | the frozen-physics approximation, measured |
-| `fast_mass` / CUDA | — | — | not warranted: fixed-grid contraction (~2M FMA + 0.7M lookups/sample), launch/transfer-bound; C++ does it in 154 ms. CUDA's projection target is `full_ltmz` (PAGANI over (z, lnM, θ); CPU precedent ShearPrjCuhre ≈ 30× fixed-GL cost) once its definition is fixed |
+| `fast_mass` / CUDA | — | — | planned: the device-resident quad::Interp2D/3D infrastructure makes the per-slice contractions (~2.2M FMA + 0.7M lookups/sample) batchable into a few kernels — projected ~10× over the scalar C++ core, i.e. exact-z at ~10–20 ms/sample, cheaper than the frozen production module (82 ms) with no approximation. Custom CUDA evaluator (not a PAGANI integrand); host keeps the θ/z grid builders |
 | `radial_series` | — | — | planned: U_ℓ(x, x_θ) tables with the θ coordinate retained (plan §radial_series) |
 
 Caution on the Cuhre knobs: `eps_rel = 1e-3` is 9× faster (0.36 s) but
