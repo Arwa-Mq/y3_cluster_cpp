@@ -32,9 +32,10 @@ des_y3/
     │       ├── python/          offline U_ell generator + moment evaluator
     │       └── cpp/             Shear1hRadialSeries.so (same data, GSL interp)
     └── shear_projection/
-        └── fast_mass/
-            ├── python/          exact-z port of ShearPrjCore (no freeze)
-            └── cpp/             ShearPrjFastMass.so (one core, both observables)
+        ├── fast_mass/
+        │   ├── python/          exact-z port of ShearPrjCore (no freeze)
+        │   └── cpp/             ShearPrjFastMass.so (one core, both observables)
+        └── full_ltmz/cuda/      DSigmaPrjFullLtmzGpu.so (PAGANI over ln θ, z, lnM)
 ```
 
 Ground rules (from the approved proposal):
@@ -99,11 +100,12 @@ fiducial widePlanck point, pinned 12-bin wall; times per MCMC sample.
 
 | Strategy / backend | Time | Error vs reference | Notes |
 |---|---|---|---|
-| `full_ltmz` | — | — | **open cell**: needs a design decision (unfreeze ξ_NL's z argument? resolve the richness selection inside instead of the b_sel(θ) plateaus?) |
+| `full_ltmz` / CUDA (`DSigmaPrjFullLtmzGpu.so`, PAGANI over (ln θ, z, lnM)) | 95 s (eps 1e-3) | median 9.5e-4 vs refined GL; max 2.2% at innermost radii (open convergence study) | the angle/z/mass-resolved integration of the *current* observable definition; found the production-knob GL grids under-resolve wall edges by up to 2.3% |
+| `full_ltmz` (extended definition) | — | — | **open decision**: unfreeze ξ_NL's z argument and/or resolve the richness selection inside the θ integral (extends the observable, plan owner's call) |
 | `fast_mass` / Python (exact z, no freeze) | 270 ms | best available reference | identity 1.0e-11 vs C++ |
 | `fast_mass` / C++ (`ShearPrjFastMass.so`) | 154 ms | best available reference | 9.9e-12 vs exact `dsigma_prj` evaluator (same core); both observables in one pass |
 | `fast_mass` / frozen production | 82 ms | 5.5e-5 from exact | the frozen-physics approximation, measured |
-| `fast_mass` / CUDA (`DSigmaPrjFastMassGpu.so`, PAGANI) | 95 s (eps 1e-3) | median 9.5e-4 vs refined GL reference; max 2.2% at the innermost radii (open convergence study) | log-θ integrand (linear θ silently returns 0 on 20% of points); found the production-knob GL settings under-resolve wall-edge radii by up to 2.3% — outermost radii: refined reference lands on PAGANI to 2e-4 |
+| `fast_mass` / CUDA | — | — | planned: batched-contraction evaluator over the device quad::Interp tables (projected ~10–20 ms/sample); the PAGANI module belongs to full_ltmz, not here |
 | `radial_series` | — | — | planned: U_ℓ(x, x_θ) tables with the θ coordinate retained (plan §radial_series) |
 
 Caution on the Cuhre knobs: `eps_rel = 1e-3` is 9× faster (0.36 s) but

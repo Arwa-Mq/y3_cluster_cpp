@@ -1,8 +1,8 @@
-# Projection shear — `fast_mass` (CUDA / PAGANI)
+# Projection shear — `full_ltmz` (CUDA / PAGANI)
 
 **Status: implemented; validation surfaced a real numerics finding —
 convergence study of the wall-edge radii still open.** Built as
-`DSigmaPrjFastMassGpu.so`; standard CUDA integration-module template,
+`DSigmaPrjFullLtmzGpu.so`; standard CUDA integration-module template,
 every table on the device via `quad::Interp1D/Interp2D`; one adaptive
 PAGANI triple integral per wall point over the continuous projection
 integrand (exact z, ξ_NL frozen at z_ob, analytic b_sel plateaus, slab

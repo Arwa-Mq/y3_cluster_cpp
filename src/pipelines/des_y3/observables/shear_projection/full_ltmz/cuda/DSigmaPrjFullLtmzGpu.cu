@@ -1,4 +1,4 @@
-// Projection shear via the fast_mass strategy — CUDA/PAGANI backend.
+// Projection shear — full (theta, z, lnM)-resolved reference, CUDA/PAGANI.
 //
 // Follows the standard CUDA integration-module template
 // (DEFINE_COSMOSIS_CUDA_INTEGRATION_MODULE, same as gt_card_gpu and the
@@ -47,7 +47,7 @@
 #include <stdexcept>
 #include <vector>
 
-class DSigmaPrjFastMassGpu {
+class DSigmaPrjFullLtmzGpu {
 public:
   using grid_t = y3_cluster::grid_t<4>;
   using grid_point_t = grid_t::value_type;
@@ -89,13 +89,13 @@ private:
   }
 
 public:
-  explicit DSigmaPrjFastMassGpu(cosmosis::DataBlock& cfg)
+  explicit DSigmaPrjFullLtmzGpu(cosmosis::DataBlock& cfg)
   {
     lob_centers_ = {25.0, 37.5, 52.5, 130.0};
     if (cfg.has_val(module_label(), "lob_centers"))
       lob_centers_ = get_vector_double(cfg, module_label(), "lob_centers");
     if (lob_centers_.empty())
-      throw std::runtime_error("DSigmaPrjFastMassGpu: lob_centers empty");
+      throw std::runtime_error("DSigmaPrjFullLtmzGpu: lob_centers empty");
   }
 
   void
@@ -204,7 +204,7 @@ public:
            (*hmf_)(lnM, zt) * (1.0 + cl) * dsmis;   // x theta: dtheta = theta dlntheta
   }
 
-  static char const* module_label() { return "DSigmaPrjFastMassGpu"; }
+  static char const* module_label() { return "DSigmaPrjFullLtmzGpu"; }
 
   static std::vector<volume_t>
   make_integration_volumes(cosmosis::DataBlock& cfg)
@@ -221,4 +221,4 @@ public:
   }
 };
 
-DEFINE_COSMOSIS_CUDA_INTEGRATION_MODULE(DSigmaPrjFastMassGpu)
+DEFINE_COSMOSIS_CUDA_INTEGRATION_MODULE(DSigmaPrjFullLtmzGpu)
