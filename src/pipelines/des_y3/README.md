@@ -21,7 +21,9 @@ des_y3/
     │       ├── cpp/             NumCountsFullLtmz.so (adaptive Cuhre)
     │       └── cuda/            NumCountsFullLtmzGpu.so (PAGANI)
     ├── shear_1h2h/
-    │   ├── fast_mass/python/    exact z contraction + direct GL mass sum
+    │   ├── fast_mass/
+    │   │   ├── python/          exact z contraction + direct GL mass sum
+    │   │   └── cpp/             Shear1hFastMass.so (SelGLCore + mixture)
     │   ├── full_ltmz/
     │   │   ├── python/          explicit (lt, lnM, z) x production profile
     │   │   ├── cpp/             Shear1hFullLtmz.so (adaptive Cuhre per (bin,R))
@@ -88,7 +90,7 @@ fiducial widePlanck point, pinned 12-bin wall; times per MCMC sample.
 | `full_ltmz` / C++ (Cuhre, eps 1e-4) | 51 s | 3.3e-4 | 120 adaptive triples; all converged |
 | `full_ltmz` / CUDA (PAGANI, A100) | 32 s | 3.4e-4 | 8.4e-5 from the C++ Cuhre twin (job 56790321) |
 | `fast_mass` / Python | 74 ms | 8.4e-4 | identity 3.1e-15 vs production |
-| `fast_mass` / C++ | 9 ms | 8.4e-4 | **is** production `Shear1hMisSel.so` (`method=exact`) |
+| `fast_mass` / C++ (`Shear1hFastMass.so`) | 9 ms | 8.4e-4 | bitwise = production `Shear1hMisSel.so`; namespace label/section |
 | `radial_series` / Python (ℓ≤2) | 6 ms | 3.7e-3 total | tabulation + truncation + interp, same-profile fiducial |
 | `radial_series` / C++ (`Shear1hRadialSeries.so`) | 7 ms | 3.7e-3 + 1.6e-4 | interp-scheme difference vs Python |
 | `radial_series` / CUDA | — | — | not warranted (3 table lookups per point) |
