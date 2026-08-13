@@ -24,8 +24,10 @@ des_y3/
     │   ├── fast_mass/
     │   │   ├── python/          exact z contraction + direct GL mass sum;
     │   │   │                    shear1h2h_max.py = traditional max model
-    │   │   └── cpp/             Shear1hFastMass.so (SelGLCore + mixture),
-    │   │                        Shear1h2hMax.so (traditional max model)
+    │   │   ├── cpp/             Shear1hFastMass.so (SelGLCore + mixture),
+    │   │   │                    Shear1h2hMax.so (traditional max model)
+    │   │   └── cuda/            Shear1h2hMaxGpu.so (miscentred-NFW kernel
+    │   │                        contraction, rest host-side)
     │   ├── full_ltmz/
     │   │   ├── python/          explicit (lt, lnM, z) x production profile
     │   │   ├── cpp/             Shear1hFullLtmz.so (adaptive Cuhre per (bin,R))
@@ -58,6 +60,28 @@ The offline `radial_series` derived data lives under
 [`data/radial_series/`](../../../data/radial_series/) and is generated once
 by the generator in `observables/shear_1h2h/radial_series/python/`; it is
 never regenerated inside an MCMC sample.
+
+## Reference pipeline choices (2026-08-12)
+
+The plan owner's chosen default backend per observable — the cell each
+is measured/compared against elsewhere unless a specific strategy is
+called out otherwise. See the matrix below for the full accuracy/timing
+comparison across every strategy/backend cell.
+
+| Observable | Strategy | Backend |
+|---|---|---|
+| Number counts | `fast_mass` | C++ (`NumCountsSel.so`, by identity) |
+| One-halo miscentred shear | `fast_mass` | C++ (`Shear1hFastMass.so`, bitwise = production) |
+| Traditional 1h+2h shear (max model) | `fast_mass` | C++ (`Shear1h2hMax.so`) |
+| Projection shear | `fast_mass` | C++ (`ShearPrjFastMass.so`) |
+
+If GPU nodes are available, the max model and projection shear arms
+additionally run on CUDA:
+
+| Observable | Strategy | Backend |
+|---|---|---|
+| Traditional 1h+2h shear (max model) | `fast_mass` | CUDA (`Shear1h2hMaxGpu.so`) |
+| Projection shear | `fast_mass` | CUDA (`ShearPrjFrozenGpu.so`, frozen machinery) |
 
 ## The matrix: accuracy and timing per measurement mode (2026-08-12)
 
@@ -99,6 +123,7 @@ fiducial widePlanck point, pinned 12-bin wall; times per MCMC sample.
 | `radial_series` / C++ (`Shear1hRadialSeries.so`) | 7 ms | 3.7e-3 + 1.6e-4 | interp-scheme difference vs Python |
 | `radial_series` / CUDA | — | — | not warranted (3 table lookups per point) |
 | **max model** (traditional 1h+2h) / C++ (`Shear1h2hMax.so`) ⚠ | **11 ms** | 6.0e-15 vs Python (identity); inherits its 8.3e-4 vs the adaptive reference | z-resolved weights + max(1h, b·2h), all tables via Interp2D; ΔΣ_hh NaNs sanitized before interpolation |
+| **max model** (traditional 1h+2h) / CUDA (`Shear1h2hMaxGpu.so`) ⚠ | **8 ms** | 6.4e-15 vs the C++ twin (identity) | one kernel, one thread per (bin, R, lnM) node: the miscentred-NFW piece (the transcendental-heavy cost driver, ~11.5k evaluations on the production grid) over `y3_cuda::NFW_DSIGMA_MIS` (device-resident table), reduced over z with `atomicAdd` into the (bin, R) accumulator; everything else (HMF/selection weight, 2-halo ΔΣ_hh/bias tables) stays host-side, same as the C++ class. Modest ~1.4× over the C++ backend — the actual compute here is small enough that kernel-launch/H2D-transfer overhead eats most of the theoretical parallel win |
 | **max model** (traditional 1h+2h) / Python ⚠ | 83 ms | 8.3e-4 fast path; 4.9e-5 GL — vs its adaptive z-resolved reference; **ΔΣ_hh itself needs debugging, see docs/dsigma_hh_debug_flag.md** | `shear1h2h_max`: max(ΔΣ_cl, b·ΔΣ_hh); z stays inside the mass integral (2h is z-dependent); needs `compute_lensing_2h = T`; 2h NaNs at low R zero-filled |
 
 ### Projection shear (180-point wall; production `ShearPrjFrozenPhysics.so` = 82 ms)
@@ -110,7 +135,7 @@ fiducial widePlanck point, pinned 12-bin wall; times per MCMC sample.
 | `fast_mass` / Python (exact z, no freeze) | 270 ms | best available reference | identity 1.0e-11 vs C++ |
 | `fast_mass` / C++ (`ShearPrjFastMass.so`) | 154 ms | best available reference | 9.9e-12 vs exact `dsigma_prj` evaluator (same core); both observables in one pass |
 | `fast_mass` / frozen production | 82 ms | 5.5e-5 from exact | the frozen-physics approximation, measured |
-| `fast_mass` / CUDA (`ShearPrjFrozenGpu.so`, frozen machinery) | **8 ms** | 1.5e-11 vs production frozen (machine precision) | the mock_buzzard frozen algorithm with the ΔΣ_mis cache + mass contraction as one CUDA kernel; 10× over the 81 ms production module; runs on a nearly-full shared GPU (few-MB footprint) |
+| `fast_mass` / CUDA (`ShearPrjFrozenGpu.so`, frozen machinery) | **8.3 ms** | 1.5e-11 vs production frozen (machine precision) | the mock_buzzard frozen algorithm with the ΔΣ_mis cache + mass contraction as one CUDA kernel; ~10× over the 82 ms production module; runs on a nearly-full shared GPU (few-MB footprint) |
 | `radial_series` | — | — | planned: U_ℓ(x, x_θ) tables with the θ coordinate retained (plan §radial_series) |
 
 Caution on the Cuhre knobs: `eps_rel = 1e-3` is 9× faster (0.36 s) but

@@ -75,6 +75,9 @@ add_subdirectory(
 add_subdirectory(
   ${CMAKE_SOURCE_DIR}/src/pipelines/des_y3/observables/shear_projection/fast_mass/cuda
   ${CMAKE_CURRENT_BINARY_DIR}/des_y3_shear_prj_frozen_cuda)
+add_subdirectory(
+  ${CMAKE_SOURCE_DIR}/src/pipelines/des_y3/observables/shear_1h2h/fast_mass/cuda
+  ${CMAKE_CURRENT_BINARY_DIR}/des_y3_shear_1h2h_max_cuda)
 # Many of these are historical
 # add_subdirectory(DESxSPTModule)
 # add_subdirectory(sigma_kappa_y1)
