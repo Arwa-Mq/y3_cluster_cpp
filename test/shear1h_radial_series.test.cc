@@ -14,11 +14,67 @@
 
 #include "pipelines/des_y3/observables/shear_1h2h/radial_series/cpp/shear1h_radial_series_t.hh"
 
+#include <array>
 #include <cmath>
 
 using y3_cluster::des_y3::A0_of_y;
 using y3_cluster::des_y3::RadialSeriesTable;
 using y3_cluster::des_y3::y_of_lnM;
+
+namespace {
+  constexpr double SERIES_REL_TOL = 1.0e-3;
+
+  double
+  direct_profile(RadialSeriesTable const& tab, double R, double r_mis,
+                 double y, double f_mis, double rho_mult)
+  {
+    return A0_of_y(y) *
+           tab.u_mix(0, std::log(R) - y, std::log(r_mis) - y, f_mis,
+                     rho_mult);
+  }
+
+  template<std::size_t N>
+  double
+  direct_population(RadialSeriesTable const& tab, double R, double r_mis,
+                    double norm, double ybar,
+                    std::array<double, N> const& delta_y,
+                    std::array<double, N> const& probability, double f_mis,
+                    double rho_mult)
+  {
+    double out = 0.0;
+    for (std::size_t i = 0; i != N; ++i)
+      out += probability[i] * direct_profile(
+                                tab, R, r_mis, ybar + delta_y[i], f_mis,
+                                rho_mult);
+    return norm * out;
+  }
+
+  template<std::size_t N>
+  double
+  central_moment(std::array<double, N> const& delta_y,
+                 std::array<double, N> const& probability, int order)
+  {
+    double out = 0.0;
+    for (std::size_t i = 0; i != N; ++i)
+      out += probability[i] * std::pow(delta_y[i], order);
+    return out;
+  }
+}
+
+TEST_CASE("radial_series NFW scale and amplitude factorisation is exact")
+{
+  // r_s is proportional to M^(1/3), while A0 is proportional to r_s.
+  // These identities are the separation that makes the U_ell tables
+  // independent of the MCMC sample.
+  double const lnM = 33.2;
+  for (double delta_y : {-0.4, -0.05, 0.1, 0.7}) {
+    double const y0 = y_of_lnM(lnM);
+    double const y1 = y_of_lnM(lnM + 3.0 * delta_y);
+    CHECK(y1 == Approx(y0 + delta_y).epsilon(1e-12));
+    CHECK(A0_of_y(y1) ==
+          Approx(A0_of_y(y0) * std::exp(delta_y)).epsilon(1e-12));
+  }
+}
 
 TEST_CASE("radial_series table interpolation matches golden values")
 {
@@ -63,6 +119,85 @@ TEST_CASE("radial_series series assembly matches golden values")
         Approx(1.346639748480e+04).epsilon(1e-9));
   CHECK(tab.series(R, r_mis, norm, ybar, mu2, mu3, f_mis, rho_mult, 3) ==
         Approx(1.342457714365e+04).epsilon(1e-9));
+}
+
+TEST_CASE("radial_series mixture decomposition has exact endpoints")
+{
+  RadialSeriesTable const tab;
+  double const lnx = 0.371;
+  double const lnxm = -0.824;
+  double const rho_mult = 0.3096;
+
+  for (int ell : {0, 1, 2, 3}) {
+    double const cen = tab.u_cen(ell, lnx);
+    double const mis = tab.u_mis(ell, lnx, lnxm);
+    CHECK(tab.u_mix(ell, lnx, lnxm, 0.0, rho_mult) ==
+          Approx(cen).epsilon(1e-13));
+    CHECK(tab.u_mix(ell, lnx, lnxm, 1.0, rho_mult) ==
+          Approx(rho_mult * mis).epsilon(1e-13));
+
+    // The target-cluster mixture must remain affine in f_mis.  This also
+    // pins rho_mult to the miscentred term only.
+    double const f_mis = 0.37;
+    double const expected =
+      (1.0 - f_mis) * cen + f_mis * rho_mult * mis;
+    CHECK(tab.u_mix(ell, lnx, lnxm, f_mis, rho_mult) ==
+          Approx(expected).epsilon(1e-13));
+  }
+}
+
+TEST_CASE("radial_series second-order decomposition matches a direct symmetric population")
+{
+  RadialSeriesTable const tab;
+  double const r_mis = 0.15;
+  double const norm = 137.0;
+  double const ybar = std::log(0.30);
+  double const f_mis = 0.22;
+  double const rho_mult = 0.3096;
+
+  // A narrow symmetric population has mu_3 = 0, isolating U_2.  The direct
+  // side evaluates U_0 separately at every mass; the series side evaluates
+  // U_0 and U_2 only at the effective scale radius.
+  std::array<double, 3> const dy = {-0.04, 0.0, 0.04};
+  std::array<double, 3> const p = {0.25, 0.50, 0.25};
+  double const mu2 = central_moment(dy, p, 2);
+  double const mu3 = central_moment(dy, p, 3);
+  CHECK(mu3 == Approx(0.0).margin(1e-15));
+
+  for (double R : {0.20, 0.84, 3.0, 10.0}) {
+    double const direct = direct_population(
+      tab, R, r_mis, norm, ybar, dy, p, f_mis, rho_mult);
+    double const series = tab.series(R, r_mis, norm, ybar, mu2, mu3,
+                                     f_mis, rho_mult, 2);
+    CHECK(series == Approx(direct).epsilon(SERIES_REL_TOL));
+  }
+}
+
+TEST_CASE("radial_series third-order decomposition matches a direct skewed population")
+{
+  RadialSeriesTable const tab;
+  double const r_mis = 0.15;
+  double const norm = 137.0;
+  double const ybar = std::log(0.30);
+  double const f_mis = 0.22;
+  double const rho_mult = 0.3096;
+
+  // The weighted displacement is exactly zero, but mu_3 is nonzero.  This
+  // exercises U_3 independently of the symmetric-population test above.
+  std::array<double, 2> const dy = {-0.03, 0.06};
+  std::array<double, 2> const p = {2.0 / 3.0, 1.0 / 3.0};
+  CHECK(central_moment(dy, p, 1) == Approx(0.0).margin(1e-15));
+  double const mu2 = central_moment(dy, p, 2);
+  double const mu3 = central_moment(dy, p, 3);
+  REQUIRE(std::abs(mu3) > 0.0);
+
+  for (double R : {0.20, 0.84, 3.0, 10.0}) {
+    double const direct = direct_population(
+      tab, R, r_mis, norm, ybar, dy, p, f_mis, rho_mult);
+    double const series = tab.series(R, r_mis, norm, ybar, mu2, mu3,
+                                     f_mis, rho_mult, 3);
+    CHECK(series == Approx(direct).epsilon(SERIES_REL_TOL));
+  }
 }
 
 TEST_CASE("radial_series amplitude matches the production NFW_DSIGMA_MIS")

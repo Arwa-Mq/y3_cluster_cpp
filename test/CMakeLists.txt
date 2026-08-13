@@ -58,6 +58,44 @@ if (USE_CUDA)
   target_compile_options(timing_sentry_cuda_test PRIVATE "--expt-relaxed-constexpr")
   add_test(timing_sentry_cuda_test timing_sentry_cuda_test)
 
+  # des_y3 Phase 2 CUDA backends
+  find_library(NVTX_LIBRARY nvToolsExt PATHS ENV LD_LIBRARY_PATH)
+
+  add_executable(num_counts_full_ltmz_gpu_test num_counts_full_ltmz_gpu.test.cu)
+  target_link_libraries(num_counts_full_ltmz_gpu_test PRIVATE cosmosis ${NVTX_LIBRARY} cuda_models cuda_utils utils testmain fmt::fmt)
+  target_include_directories(num_counts_full_ltmz_gpu_test PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/externals ${CUBACPP_DIR} ${PAGANI_DIR})
+  set_target_properties(num_counts_full_ltmz_gpu_test PROPERTIES POSITION_INDEPENDENT_CODE ON CUDA_ARCHITECTURES ${Y3GCC_TARGET_ARCH})
+  target_compile_options(num_counts_full_ltmz_gpu_test PRIVATE "--expt-relaxed-constexpr" "-lineinfo" "-DCURAND")
+  add_test(num_counts_full_ltmz_gpu_test num_counts_full_ltmz_gpu_test)
+
+  add_executable(shear1h_full_ltmz_gpu_test shear1h_full_ltmz_gpu.test.cu)
+  target_link_libraries(shear1h_full_ltmz_gpu_test PRIVATE cosmosis ${NVTX_LIBRARY} cuda_models cuda_utils utils testmain fmt::fmt)
+  target_include_directories(shear1h_full_ltmz_gpu_test PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/externals ${CUBACPP_DIR} ${PAGANI_DIR})
+  set_target_properties(shear1h_full_ltmz_gpu_test PROPERTIES POSITION_INDEPENDENT_CODE ON CUDA_ARCHITECTURES ${Y3GCC_TARGET_ARCH})
+  target_compile_options(shear1h_full_ltmz_gpu_test PRIVATE "--expt-relaxed-constexpr" "-lineinfo" "-DCURAND")
+  add_test(shear1h_full_ltmz_gpu_test shear1h_full_ltmz_gpu_test)
+
+  add_executable(shear1h2h_max_gpu_test shear1h2h_max_gpu.test.cu)
+  target_link_libraries(shear1h2h_max_gpu_test PRIVATE cosmosis ${NVTX_LIBRARY} utils models cuda_models cuda_utils ${GSL_LIBRARIES} ${CUBA_LIBRARIES} testmain fmt::fmt)
+  target_include_directories(shear1h2h_max_gpu_test PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/externals ${CUBACPP_DIR} ${PAGANI_DIR} ${GSL_INCLUDE_DIR})
+  set_target_properties(shear1h2h_max_gpu_test PROPERTIES POSITION_INDEPENDENT_CODE ON CUDA_ARCHITECTURES ${Y3GCC_TARGET_ARCH})
+  target_compile_options(shear1h2h_max_gpu_test PRIVATE "--expt-relaxed-constexpr" "-lineinfo" "-DCURAND")
+  add_test(shear1h2h_max_gpu_test shear1h2h_max_gpu_test)
+
+  add_executable(shear_prj_frozen_gpu_test shear_prj_frozen_gpu.test.cu)
+  target_link_libraries(shear_prj_frozen_gpu_test PRIVATE cosmosis ${NVTX_LIBRARY} utils models cuda_models cuda_utils ${GSL_LIBRARIES} ${CUBA_LIBRARIES} testmain fmt::fmt)
+  target_include_directories(shear_prj_frozen_gpu_test PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/externals ${CUBACPP_DIR} ${PAGANI_DIR} ${GSL_INCLUDE_DIR})
+  set_target_properties(shear_prj_frozen_gpu_test PROPERTIES POSITION_INDEPENDENT_CODE ON CUDA_ARCHITECTURES ${Y3GCC_TARGET_ARCH})
+  target_compile_options(shear_prj_frozen_gpu_test PRIVATE "--expt-relaxed-constexpr" "-lineinfo" "-DCURAND")
+  add_test(shear_prj_frozen_gpu_test shear_prj_frozen_gpu_test)
+
+  add_executable(dsigma_prj_full_ltmz_gpu_test dsigma_prj_full_ltmz_gpu.test.cu)
+  target_link_libraries(dsigma_prj_full_ltmz_gpu_test PRIVATE cosmosis ${NVTX_LIBRARY} utils cuda_models cuda_utils testmain fmt::fmt)
+  target_include_directories(dsigma_prj_full_ltmz_gpu_test PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/externals ${CUBACPP_DIR} ${PAGANI_DIR})
+  set_target_properties(dsigma_prj_full_ltmz_gpu_test PROPERTIES POSITION_INDEPENDENT_CODE ON CUDA_ARCHITECTURES ${Y3GCC_TARGET_ARCH})
+  target_compile_options(dsigma_prj_full_ltmz_gpu_test PRIVATE "--expt-relaxed-constexpr" "-lineinfo" "-DCURAND")
+  add_test(dsigma_prj_full_ltmz_gpu_test dsigma_prj_full_ltmz_gpu_test)
+
 endif()
 
 add_executable(
@@ -209,6 +247,93 @@ target_include_directories(
                                      ${GSL_INCLUDE_DIR}
   )
 add_test(shear1h_radial_series_test shear1h_radial_series_test)
+
+# fast_mass C++ backend, shear_projection (src/pipelines/des_y3, Phase 2):
+# theta-grid / exclusion-angle golden values vs the Python fast_mass
+# port, the NFW_DSIGMA_MIS c=4/single convention, and ShearPrjCore's
+# own wall-grid construction.
+add_executable(shear_prj_fast_mass_test shear_prj_fast_mass.test.cc)
+target_link_libraries(
+  shear_prj_fast_mass_test PRIVATE testmain ${GSL_LIBRARIES}
+                                   ${CUBA_LIBRARIES} utils models cosmosis
+                                   fmt::fmt
+  )
+target_include_directories(
+  shear_prj_fast_mass_test PRIVATE ${CMAKE_SOURCE_DIR}/src
+                                   ${CMAKE_SOURCE_DIR}/externals
+                                   ${CUBACPP_DIR} ${CUBA_INCLUDE_DIR}
+                                   ${GSL_INCLUDE_DIR}
+  )
+add_test(shear_prj_fast_mass_test shear_prj_fast_mass_test)
+
+# Pure-Python DES Y3 model/decomposition tests.  Use the interpreter from the
+# active CosmoSIS environment so numpy/scipy match the pipeline runtime.
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+add_test(
+  NAME des_y3_pipeline_python_test
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/des_y3_pipeline.test.py
+  )
+
+add_executable(numcounts_full_ltmz_test numcounts_full_ltmz.test.cc)
+target_link_libraries(
+  numcounts_full_ltmz_test PRIVATE testmain utils models cosmosis
+                                   ${GSL_LIBRARIES} ${CUBA_LIBRARIES}
+  )
+target_include_directories(
+  numcounts_full_ltmz_test PRIVATE ${CMAKE_SOURCE_DIR}/src
+                                   ${CMAKE_SOURCE_DIR}/externals
+                                   ${CUBACPP_DIR} ${CUBA_INCLUDE_DIR}
+                                   ${COSMOSIS_BASE_DIR} ${GSL_INCLUDE_DIR}
+  )
+add_test(numcounts_full_ltmz_test numcounts_full_ltmz_test)
+
+# Traditional 1h+2h max model (des_y3 Phase 2): f_mis mixture endpoints,
+# dSigma_hh NaN-sanitization, and the phi_max(1h, b*2h) composition.
+add_executable(shear1h2h_max_test shear1h2h_max.test.cc)
+target_link_libraries(
+  shear1h2h_max_test PRIVATE testmain ${GSL_LIBRARIES} utils cosmosis
+                             fmt::fmt
+  )
+target_include_directories(
+  shear1h2h_max_test PRIVATE ${CMAKE_SOURCE_DIR}/src
+                             ${CMAKE_SOURCE_DIR}/externals
+                             ${CUBACPP_DIR} ${GSL_INCLUDE_DIR}
+  )
+add_test(shear1h2h_max_test shear1h2h_max_test)
+
+# fast_mass C++ backend, shear_1h2h (des_y3 Phase 2): SelGLCore + the
+# miscentred NFW mixture vs an independently-assembled reference, and
+# an identity check against the production-equivalent Shear1hMisSelGL.
+add_executable(shear1h_fast_mass_test shear1h_fast_mass.test.cc)
+target_link_libraries(
+  shear1h_fast_mass_test PRIVATE testmain ${GSL_LIBRARIES}
+                                 ${CUBA_LIBRARIES} utils models cosmosis
+                                 fmt::fmt
+  )
+target_include_directories(
+  shear1h_fast_mass_test PRIVATE ${CMAKE_SOURCE_DIR}/src
+                                 ${CMAKE_SOURCE_DIR}/externals
+                                 ${CUBACPP_DIR} ${CUBA_INCLUDE_DIR}
+                                 ${GSL_INCLUDE_DIR}
+  )
+add_test(shear1h_fast_mass_test shear1h_fast_mass_test)
+
+# full_ltmz C++ backend, shear_1h2h (des_y3 Phase 2): operator() vs an
+# independently-assembled reference over the production sub-models, plus
+# mixture-affinity and monotonic-falloff structural invariants.
+add_executable(shear1h_full_ltmz_test shear1h_full_ltmz.test.cc)
+target_link_libraries(
+  shear1h_full_ltmz_test PRIVATE testmain ${GSL_LIBRARIES}
+                                 ${CUBA_LIBRARIES} utils models cosmosis
+                                 fmt::fmt
+  )
+target_include_directories(
+  shear1h_full_ltmz_test PRIVATE ${CMAKE_SOURCE_DIR}/src
+                                 ${CMAKE_SOURCE_DIR}/externals
+                                 ${CUBACPP_DIR} ${CUBA_INCLUDE_DIR}
+                                 ${GSL_INCLUDE_DIR}
+  )
+add_test(shear1h_full_ltmz_test shear1h_full_ltmz_test)
 
 add_executable(mz_power_law_test mz_power_law.test.cc)
 target_link_libraries(mz_power_law_test PRIVATE testmain)

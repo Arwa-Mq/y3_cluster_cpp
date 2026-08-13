@@ -27,6 +27,7 @@ science/index
 running
 installation
 pipeline_organization
+testing
 ```
 
 ```{toctree}
