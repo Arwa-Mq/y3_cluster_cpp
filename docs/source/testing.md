@@ -28,7 +28,9 @@ cd release-build && ctest -j10 --output-on-failure
 
 # Everything, including the CUDA backends — requires a GPU and the
 # pinned toolchain (BUILDING.md): cudatoolkit/12.2 + gcc-native/12.3.
-# Keep -j low on a shared GPU (see the memory-contention note below).
+# Keep -j low on a shared GPU: on a card another job already has most
+# of the memory on, higher -j can trip a spurious cudaCheckError()
+# out-of-memory in table construction rather than a real regression.
 cd gpu-build && ctest -j2 --output-on-failure
 
 # One test by name
@@ -47,27 +49,8 @@ explicitly before running `gpu-build` tests:
 export LD_LIBRARY_PATH="/opt/nvidia/hpc_sdk/Linux_x86_64/23.9/cuda/12.2/targets/x86_64-linux/lib:$LD_LIBRARY_PATH"
 ```
 
-On a GPU shared with other jobs, running CUDA tests at high `ctest -j`
-parallelism can abort under GPU-memory contention even though each test
-passes fine alone; drop to `-j1`/`-j2` for the CUDA tests specifically
-if `gpu-build` tests fail with "Subprocess aborted" (check
-`nvidia-smi` first — a near-full `memory.used` confirms contention
-rather than a code regression).
-
 `Y3_CLUSTER_CPP_DIR` must be set in the environment for any test that
 reads fixture data under `data/` or `test/` by relative path.
-
-```{admonition} GPU memory contention on a shared card
-:class: warning
-On a nearly-full shared GPU, running more than ~2 `gpu-build` test
-binaries at once can trip `cudaCheckError(): out of memory` inside
-`Interp2D`/PAGANI table construction — a resource-contention artifact
-of the shared card, not a test failure (confirmed 2026-08-12: the same
-binaries pass reliably at `-j1`/`-j2`, and fail intermittently at
-higher `-j` when another process already holds most of the card's
-memory). If a `gpu-build` test aborts with an out-of-memory message,
-rerun at lower `-j` (or alone) before treating it as a regression.
-```
 
 ## Core numerics and utilities
 
