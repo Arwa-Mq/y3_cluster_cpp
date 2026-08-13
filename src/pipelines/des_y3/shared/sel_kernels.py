@@ -3,9 +3,14 @@
 The approved layout proposal requires new implementations to *reuse* the
 maintained shared model layer instead of copying HOD / richness / photo-z
 constructors. The Python side of that layer is
-``src/modules/sel_function/sel_function.py`` (which itself mirrors
+``src/pipelines/des_y3/shared/sel_function.py`` (which itself mirrors
 ``mor_hod_t.hh`` and ``richness_kernel_t.hh``); this helper loads it once
 by path — it is a module file, not a package — and caches it.
+
+``src/modules/sel_function/sel_function.py`` (the CosmoSIS module entry
+point) is currently an exact copy of the same file, kept until
+downstream consumers are confirmed migrated; this helper reads only the
+shared-folder copy.
 
 Also provides small Source-protocol equivalents of its DataBlock readers
 so offline validators can replay a test-sampler dump.
@@ -20,7 +25,7 @@ from pathlib import Path
 def repo_root():
     """Locate the y3_cluster_cpp root from this file's position."""
     for p in Path(__file__).resolve().parents:
-        if (p / "src" / "modules" / "sel_function" / "sel_function.py").is_file():
+        if (p / "src" / "pipelines" / "des_y3" / "shared" / "sel_function.py").is_file():
             return p
     raise ImportError(
         "sel_kernels: could not locate the y3_cluster_cpp repository root")
@@ -36,7 +41,7 @@ def load():
     # root is importable even when PYTHONPATH does not already include it.
     if str(root) not in sys.path:
         sys.path.insert(0, str(root))
-    path = root / "src" / "modules" / "sel_function" / "sel_function.py"
+    path = root / "src" / "pipelines" / "des_y3" / "shared" / "sel_function.py"
     spec = importlib.util.spec_from_file_location(name, path)
     mod = importlib.util.module_from_spec(spec)
     sys.modules[name] = mod
