@@ -9,15 +9,6 @@ target_link_libraries(Shear1hFastMass PRIVATE cosmosis utils models
 target_include_directories(Shear1hFastMass PRIVATE
   ${CMAKE_SOURCE_DIR}/src ${CUBACPP_DIR} ${GSL_INCLUDE_DIRS})
 
-# fast_mass shear C++ backend, inline selection function
-# (SelFunctionInlineCore_t) -- no sel_function.py dependency. Additive
-# sibling; Shear1hFastMass above is untouched.
-add_library(Shear1hFastMassInline MODULE Shear1hFastMassInline.cc)
-target_link_libraries(Shear1hFastMassInline PRIVATE cosmosis utils models
-                      ${GSL_LIBRARIES} ${CUBA_LIBRARIES} fmt::fmt)
-target_include_directories(Shear1hFastMassInline PRIVATE
-  ${CMAKE_SOURCE_DIR}/src ${CUBACPP_DIR} ${GSL_INCLUDE_DIRS})
-
 # Traditional 1h+2h max model (des_y3 Phase 2): z-resolved weights (the
 # 2h term is z-dependent) x max(1h, b*2h), all tables via Interp2D.
 add_library(Shear1h2hMax MODULE Shear1h2hMax.cc)
