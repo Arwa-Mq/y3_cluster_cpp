@@ -22,6 +22,24 @@ adds the projection term.
   grids of the gamma-kernel miscentred NFW in
   $(R/r_s, R_{\rm mis}/r_s)$, loaded once at module construction.
 
+## DES Y3 implementations
+
+The production module above remains path-stable. New implementations below
+`src/pipelines/des_y3/observables/shear_1h2h` provide the reference and fast
+cells described in {doc}`../pipeline_organization`:
+
+| Strategy | Backends | Implementation and status |
+|---|---|---|
+| `full_ltmz` | Python, C++, CUDA | Explicit $(\lambda_{\rm true},\ln M,z)$ one-halo miscentred references |
+| `fast_mass` | Python, C++ | Exact redshift contraction and direct mass sum; `Shear1hFastMass.so` is bitwise-equivalent to production |
+| `radial_series` | Python, C++ | Offline $U_\ell$ tables plus per-sample population moments; candidate implementation |
+| `fast_mass` max model | Python, C++, CUDA | Traditional $\max(1h,b\,2h)$ variant; implemented but its $\Delta\Sigma_{hh}$ input remains under investigation |
+
+The radial-series tables are versioned under `data/radial_series` and are
+loaded, never regenerated, during sampling. The `full_ltmz` cells are the
+accuracy references; the fast and series paths retain their own documented
+physics and interpolation approximations.
+
 ## Numerical framework
 
 The full integral — the population operator $N_i[f]$
@@ -122,4 +140,3 @@ Everything {doc}`NumCountsSel <number_counts>` reads, plus:
 | DataBlock output | Meaning | Units / shape | Consumed by |
 |---|---|---|---|
 | `shear1hmissel/vals` | $N_i[\gamma_t^{1h,\rm full}](R)$, bin slow / radius fast | `(180,)` | `likelihoods` |
-

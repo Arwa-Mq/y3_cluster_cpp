@@ -13,6 +13,13 @@ tensor and interpolate it inside their population integrals.
   (`y3_cluster_cpp` @ `d7feb75`).
 - Loaded by CosmoSIS as a Python module.
 
+The maintained DES Y3 namespace also contains
+`src/pipelines/des_y3/shared/sel_function.py`. As of 2026-08-12 it is an
+exact staged copy of this production entry point, and namespace validators
+load it through `shared/sel_kernels.py`. This is not yet a runtime cutover:
+the reference ini continues to load `src/modules/sel_function/sel_function.py`.
+See {doc}`../pipeline_organization` for the compatibility boundary.
+
 ## Numerical framework
 
 The full integral: the **richness selection function** — the probability
@@ -125,4 +132,3 @@ N_q    = 32
 | `sel_function/lnM` | shared mass grid | `(192,)` | `NumCountsSel`, `Shear1hMisSel` |
 | `sel_function/z` | shared redshift grid | `(64,)` | same |
 | `sel_function/S_stack` | packed selection tensor $S_{ij}(\ln M, z)$, layout `(bin, z, lnM)`, C-contiguous | `(12, 64, 192)` | same |
-

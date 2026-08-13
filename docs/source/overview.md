@@ -22,11 +22,15 @@ widePlanck self-closure and other retained configurations.
 the cluster-population and cluster-lensing calculations used in the DES
 cluster-cosmology pipeline.
 
-The repository is organised as a collection of CosmoSIS modules. These
-modules read cosmological, halo-model, richness–mass relation,
-survey-selection, and lensing-calibration quantities from the CosmoSIS
-DataBlock; evaluate the required population integrals; and write predicted
-cluster observables back to the DataBlock.
+The repository contains path-stable production CosmoSIS modules under
+`src/modules` and new maintained DES Y3 implementations under
+`src/pipelines/des_y3`. Both compose the shared model layer under
+`src/models`. The production modules read cosmological, halo-model,
+richness–mass relation, survey-selection, and lensing-calibration quantities
+from the CosmoSIS DataBlock; evaluate the required population integrals; and
+write predicted cluster observables back to the DataBlock. The newer
+namespace organizes alternative calculations by observable, integration
+strategy, and backend; see {doc}`pipeline_organization`.
 
 The main calculations implemented by the current Costanzi-2026 path are:
 

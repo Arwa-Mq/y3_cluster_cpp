@@ -24,6 +24,25 @@ $\gamma_t^{\rm theory} = \langle\gamma_t^{1h}\rangle + \gamma_t^{\rm prj}$.
   `data/nfw_off_center/table_1000_1e-03_5e+03_single_{logx, logxmis}.txt`,
   `…_log_deltasigma_single.txt`.
 
+## DES Y3 implementations
+
+The production frozen-physics module above remains path-stable. The new
+namespace under `src/pipelines/des_y3/observables/shear_projection` contains:
+
+| Strategy | Backend | Implementation and status |
+|---|---|---|
+| `full_ltmz` | CUDA | `DSigmaPrjFullLtmzGpu.so`; adaptive $(\ln\theta,z,\ln M)$ PAGANI reference, with the innermost-radius convergence study still open |
+| `fast_mass` | Python | Exact-$z$ reference port of `ShearPrjCore` |
+| `fast_mass` | C++ | `ShearPrjFastMass.so`; exact-$z$ core emitting $\Delta\Sigma$ and shear in one pass |
+| `fast_mass` | CUDA | `ShearPrjFrozenGpu.so`; CUDA implementation of the explicitly frozen production machinery |
+| `radial_series` | — | Planned, not implemented |
+
+Here `fast_mass` means that the redshift contraction occurs outside the
+radial operator; it does not imply frozen physics. The CUDA cell is labelled
+frozen because it deliberately reproduces `ShearPrjFrozenPhysics.so`, whereas
+the Python and C++ cells retain the exact redshift dependence. See
+{doc}`../pipeline_organization` for the validation policy.
+
 ## Numerical framework
 
 The full integral — per $(\lambda^{\rm ob}, z^{\rm ob}, R)$ wall point,
@@ -160,4 +179,3 @@ Nine arrays, each of length 180 (total = `rnd` + `cl`):
 
 Do not load this module together with `ShearPrjEvaluator` in one
 pipeline: both write `shear_prj/*` and the later module wins.
-

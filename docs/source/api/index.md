@@ -86,6 +86,38 @@ device implementation of the same model exists. Grouped by status.
 | `op_sel_park.hh` | `OP_SEL_PARK` | Park-style selection operator | 
 | `triax_richness.cuh` / `interpolation_tables.cuh` | `TRIAX_RICHNESS`, … | CUDA-only triaxiality experiment / device table helpers |
 
+(src-pipelines-des-y3)=
+## `src/pipelines/des_y3`
+
+The additive maintained namespace for new DES Y3 implementations. Its layout
+is observable → integration strategy → backend; it does not relocate the
+production modules listed in [src/modules](#src-modules). See
+{doc}`../pipeline_organization` for the strategy definitions, status matrix,
+and compatibility rules.
+
+### Shared Python layer
+
+| File | Role |
+|---|---|
+| `shared/datablock_models.py` | Convention-matched HMF, volume, survey-area, selection-weight, and DataBlock-dump adapters |
+| `shared/full_ltmz_core.py` | Explicit-selection `full_ltmz` contraction shared by counts and shear |
+| `shared/lensing_profiles.py` | Production-compatible centred and miscentred profile readers |
+| `shared/sel_function.py` | Staged maintained selection module; currently identical to the production entry point |
+| `shared/sel_kernels.py` | Cached loader and HOD/richness-kernel adapters for the shared selection module |
+| `shared/z_kernel.py` | Projection photo-$z$ kernel conventions |
+
+### Observable products
+
+| Directory | Products |
+|---|---|
+| `observables/number_counts/full_ltmz` | Python reference, `NumCountsFullLtmz.so`, `NumCountsFullLtmzGpu.so` |
+| `observables/number_counts/fast_mass` | Python production-algorithm replica |
+| `observables/shear_1h2h/full_ltmz` | Python reference, `Shear1hFullLtmz.so`, `Shear1hFullLtmzGpu.so` |
+| `observables/shear_1h2h/fast_mass` | Python references, `Shear1hFastMass.so`, `Shear1h2hMax.so`, `Shear1h2hMaxGpu.so` |
+| `observables/shear_1h2h/radial_series` | Python offline generator/evaluator and `Shear1hRadialSeries.so` |
+| `observables/shear_projection/full_ltmz` | `DSigmaPrjFullLtmzGpu.so` |
+| `observables/shear_projection/fast_mass` | Python exact-$z$ reference, `ShearPrjFastMass.so`, `ShearPrjFrozenGpu.so` |
+
 (src-modules)=
 ## `src/modules`
 

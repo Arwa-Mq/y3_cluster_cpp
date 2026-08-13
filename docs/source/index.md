@@ -9,6 +9,10 @@ page answers, in order: what it computes, which script implements it,
 where that script lives, how it is configured, what DataBlock values it
 reads and writes, and which module consumes its outputs.
 
+For development, {doc}`pipeline_organization` explains the additive
+`src/pipelines/des_y3` layout and how its reference and alternative
+implementations relate to the path-stable production modules.
+
 ```{toctree}
 :maxdepth: 1
 :caption: Mathematical framework
@@ -22,6 +26,7 @@ science/index
 
 running
 installation
+pipeline_organization
 ```
 
 ```{toctree}

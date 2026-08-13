@@ -16,6 +16,25 @@ of the theory vector and the denominator of the stacked one-halo shear.
 - Compiled library loaded by CosmoSIS:
   `${Y3_CLUSTER_CPP_DIR}/release-build/src/modules/num_counts_sel/NumCountsSel.so`.
 
+## DES Y3 implementations
+
+The production module above remains path-stable. New implementations follow
+the organization in {doc}`../pipeline_organization`:
+
+| Strategy | Backend | Implementation and status |
+|---|---|---|
+| `full_ltmz` | Python | Explicit $(\lambda_{\rm true},\ln M,z)$ reference; fixed GL |
+| `full_ltmz` | C++ | `NumCountsFullLtmz.so`; adaptive Cuhre reference |
+| `full_ltmz` | CUDA | `NumCountsFullLtmzGpu.so`; PAGANI reference |
+| `fast_mass` | Python | Importable re-expression of the production redshift contraction |
+| `fast_mass` | C++ | Production `NumCountsSel.so`, identical strategy |
+
+The implementations live below
+`src/pipelines/des_y3/observables/number_counts`. `radial_series` does not
+apply because the counts operator has no radial profile ($f=1$). Accuracy is
+measured against `full_ltmz`; agreement with `NumCountsSel.so` is recorded
+separately as an identity check.
+
 ## Numerical framework
 
 The full integral — this module is the $f = 1$ instance of the
@@ -91,4 +110,3 @@ lnm_high = 36.7300
 The output section name is hard-coded in the module (deliberately not an
 ini knob: a CosmoSIS `[DEFAULT]` block would propagate an
 `output_section` value into every module and silently redirect writes).
-

@@ -10,6 +10,11 @@ Primary sources: `docs/pipeline_modules.tex` (algorithms, timing audit,
 quadrature knob cheat-sheet), `docs/shear1h_radial_factorization.tex`, and
 `RichnessSelection/docs/sigma_prj_refactor.md`.
 
+New DES Y3 implementations use the strategy names `full_ltmz`, `fast_mass`,
+and `radial_series`. Their precise meanings and available backends are listed
+in {doc}`../pipeline_organization`; the production recipes below correspond
+to the fast, path-stable modules loaded by the reference ini.
+
 ## General integral structure
 
 The recurring population integral is, schematically,

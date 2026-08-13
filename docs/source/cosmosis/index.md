@@ -57,6 +57,13 @@ chain handling, mock-data-vector generation) lives in
 `des-cluster-nersc`; Python↔C++ validation harnesses in
 `RichnessSelection`; the $P(k)$ emulator training in `camb-emulator`.
 
+New reference and alternative implementations are built from
+`src/pipelines/des_y3`, but the reorganization is additive: the pinned
+reference ini still loads the paths above. See {doc}`../pipeline_organization`
+for the strategy/backend layout and the implemented matrix. A namespace
+module should be added to an ini by its own documented `.py` or `.so` path;
+its presence in the source tree does not replace a production stage.
+
 ## DataBlock trace
 
 `docs/figs/real_pipeline_extract.ini` is a trimmed copy of the
