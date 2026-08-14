@@ -1,10 +1,17 @@
 # Split `docs/sphinx-site` into three scoped PRs
 
-**Status: done.** PR #4 (`docs/sphinx-site`) now carries only the Sphinx
-site; the pipeline work moved to PR #6 (`pipelines/des_y3`); the
-mf_tinker_cpp/macOS orphan bucket sits on local branch
-`feature/mf-tinker-cpp`, not yet opened as a PR. See "Outcome" at the
-bottom.
+**Status: done.** This PR (`docs/sphinx-site`, intra-fork
+[estevesjh/y3_cluster_cpp#1](https://github.com/estevesjh/y3_cluster_cpp/pull/1))
+now carries only the Sphinx site; the pipeline work moved to
+[estevesjh/y3_cluster_cpp#7](https://github.com/estevesjh/y3_cluster_cpp/pull/7)
+(`pipelines/des_y3`); the mf_tinker_cpp/macOS orphan bucket sits on
+local branch `feature/mf-tinker-cpp`, not yet opened as a PR. See
+"Outcome" at the bottom.
+
+Both were originally opened as cross-fork PRs against
+`marcpaterno/y3_cluster_cpp` (as `#4` and `#6`) and have since been
+closed there in favor of intra-fork PRs on `estevesjh/y3_cluster_cpp`
+— this fork isn't ready to propose anything upstream yet.
 
 ## Problem
 
@@ -113,12 +120,16 @@ separately whenever.
   job were never touched.
 - `feature/mf-tinker-cpp` (4 commits, off `upstream/master`): clean,
   self-contained, no `des_y3`/docs leakage.
-- `docs/sphinx-site` (3 commits, off `upstream/master`): verified with
+- `docs/sphinx-site` (4 commits, off `upstream/master`): verified with
   `sphinx-build -W -b html docs/source docs/build/html` — build
-  succeeded. Force-pushed to `origin/docs/sphinx-site`, updating PR #4
-  in place (it had zero reviews/comments).
+  succeeded. Force-pushed to `origin/docs/sphinx-site`. Originally
+  updated PR #4 on `marcpaterno/y3_cluster_cpp` in place; that cross-fork
+  PR is now closed in favor of the pre-existing intra-fork
+  [estevesjh/y3_cluster_cpp#1](https://github.com/estevesjh/y3_cluster_cpp/pull/1),
+  which tracks the same branch.
 - `pipelines/des_y3` (3 commits, off `upstream/master`): all
   `add_subdirectory`/test-file path references verified to resolve, all
-  new Python files syntax-checked. Pushed and opened as
-  [PR #6](https://github.com/marcpaterno/y3_cluster_cpp/pull/6). Full
-  `ctest`/GPU build still needed on a Perlmutter node before merge.
+  new Python files syntax-checked. Pushed and opened first as PR #6 on
+  `marcpaterno/y3_cluster_cpp`, then closed there in favor of intra-fork
+  [estevesjh/y3_cluster_cpp#7](https://github.com/estevesjh/y3_cluster_cpp/pull/7).
+  Full `ctest`/GPU build still needed on a Perlmutter node before merge.
