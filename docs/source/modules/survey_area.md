@@ -9,7 +9,7 @@ hard-coded C++ model evaluated inside the count-type operators, and it is
 
 ## Script
 
-- Source: [`src/models/omega_z_des.hh`](https://github.com/estevesjh/y3_cluster_cpp/blob/d7feb7504ed5dfcad84f99a1791af8a55c858aa0/src/models/omega_z_des.hh)
+- Source: [`src/models/omega_z_des.hh`](https://github.com/estevesjh/y3_cluster_cpp/blob/docs/sphinx-site/src/models/omega_z_des.hh)
   (`y3_cluster::OMEGA_Z_DES`; CUDA twin `omega_z_des.cuh`, SDSS variant
   `omega_z_sdss.hh`).
 - The constructor takes the DataBlock but **reads nothing** — no
@@ -39,11 +39,12 @@ the fit is through the number counts themselves.
 
 | Operator | Ω(z)? | Why |
 |---|---|---|
-| {doc}`NumCountsSel <../observables/number_counts>` | **yes** | cluster count — area sets the expected number |
-| {doc}`Shear1hMisSel <../observables/shear_halo>` | **yes** | count-weighted numerator $N_i[\gamma]$; the area cancels only after division by $N_i[1]$ |
+| {doc}`NumCountsFastMass <../observables/number_counts>` (DES Y1: `NumCountsSel`) | **yes** | cluster count — area sets the expected number |
+| {doc}`Shear1hFastMass <../observables/shear_halo>` (DES Y1: `Shear1hMisSel`) | **yes** | count-weighted numerator $N_i[\gamma]$; the area cancels only after division by $N_i[1]$ |
 | {doc}`b_sel_marg <../selection/bsel>` | no | the $P[X]$ operators enter downstream only in ratios where $\Omega$ (and the Poisson kernel normalisation $B_i$) cancel; the Python reference has no area weight |
 | `ShearPrjEvaluator` (`shear_prj`) | no — hard-excluded | surface density: $\Omega$ cancels between numerator and normalisation (explicit comment in `src/models/sigma_prj_t.hh`) |
-| {doc}`shear_prj_frozen_physics <../observables/shear_projection>` | **ini-gated, off** | class default includes it (matching the `ShearPrjGsl` diagnostic); the reference ini sets `include_omega_z = 0`. Verified: with it on, fiducial self-closure breaks ($\log L = -151.7$); off, closure holds ($-0.004$) |
+| {doc}`ShearPrjFastMass <../observables/shear_projection>` (`ShearPrjCore`) | **no toggle — never applied** | this core has no `include_omega_z` option at all (verified against its constructor); $\Omega(z)$ is simply absent from the computation |
+| DES Y1 `shear_prj_frozen_physics` | **ini-gated, off** | its (different) frozen-specific core defaults to including it (matching the `ShearPrjGsl` diagnostic); the DES Y1 ini sets `include_omega_z = 0`. Verified: with it on, fiducial self-closure breaks ($\log L = -151.7$); off, closure holds ($-0.004$) |
 
 ```{note}
 `RichnessSelection` (the Python reference) now carries a `SurveyArea`

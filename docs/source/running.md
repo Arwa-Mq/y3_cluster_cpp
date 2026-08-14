@@ -1,11 +1,15 @@
 # Running the reference pipeline
 
 The reference configuration of the DES Y3 cluster-cosmology analysis is
-[`cosmosis-models/mock_mcmc_buzzard.ini`](https://github.com/estevesjh/des-nersc-cluster-scripts/blob/9fd24ddc075d394af4e20241bda716ac4d529fcb/cosmosis-models/mock_mcmc_buzzard.ini)
-in the **des-nersc-cluster-scripts** repository
-(branch `polychord-widePlanck-logspace-ab`, @ `9fd24dd`): the Buzzard
-convergence-test pipeline, fitting 12 number counts and 180 tangential-shear
-points against the Buzzard simulation data vector.
+[`docs/figs/y3_ref.ini`](https://github.com/estevesjh/y3_cluster_cpp/blob/docs/sphinx-site/docs/figs/y3_ref.ini)
+in this repository: the same forward model and DataBlock contract as
+the DES Y1 pipeline ({doc}`variants`), with the three observable stages
+swapped for their `src/pipelines/des_y3` fast_mass implementations —
+`NumCountsFastMass`, `Shear1hFastMass`, `ShearPrjFastMass` — per
+[`src/pipelines/des_y3/README.md`](https://github.com/estevesjh/y3_cluster_cpp/blob/pipelines/des_y3/src/pipelines/des_y3/README.md)'s
+own "Reference pipeline choices" table. Cosmology, halo model,
+selection function, and the selection-bias operators are unchanged:
+this is an implementation swap, not a different theory vector.
 
 The software suite this pipeline is built from — the CosmoSIS module
 pattern, the model/integrand separation, and the number-count and
@@ -20,9 +24,9 @@ reference for this documentation.
 [pipeline]
 modules = consistency GrowthFactor cp_camb MfTinker halo_model
           average_sigma_crit_inv sel_function
-          NumCountsSel Shear1hMisSel
+          NumCountsFastMass Shear1hFastMass
           b_sel_marg bsel
-          shear_prj_frozen_physics
+          ShearPrjFastMass
           likelihoods
 values = ${DES_CLUSTER_NERSC_DIR}/cosmosis-models/mock_mcmc_widePlanck_values.ini
 likelihoods = likelihoods
@@ -37,46 +41,30 @@ likelihoods = likelihoods
 | 5 | {doc}`halo_model <cosmology/halo_model>` | Tinker bias $b(M,z)$, $\xi_{\rm NL}$, NFW lensing tables | Python · `y3_cluster_cpp` |
 | 6 | {doc}`average_sigma_crit_inv <cosmology/sigma_crit_inv>` | $\langle\Sigma_{\rm crit}^{-1}\rangle(z_l)$ | Python · `y3_cluster_cpp` |
 | 7 | {doc}`sel_function <selection/sel_function>` | selection tensor $S_{ij}(\ln M, z)$ | Python · `y3_cluster_cpp` |
-| 8 | {doc}`NumCountsSel <observables/number_counts>` | cluster counts $N_i[1]$ | C++ · `y3_cluster_cpp` |
-| 9 | {doc}`Shear1hMisSel <observables/shear_halo>` | one-halo shear with miscentering | C++ · `y3_cluster_cpp` |
+| 8 | {doc}`NumCountsFastMass <observables/number_counts>` | cluster counts $N_i[1]$ (fast_mass, des_y3) | C++ · `y3_cluster_cpp` |
+| 9 | {doc}`Shear1hFastMass <observables/shear_halo>` | one-halo shear with miscentering (fast_mass, des_y3) | C++ · `y3_cluster_cpp` |
 | 10 | {doc}`b_sel_marg <selection/bsel>` | selection-bias operators $(P_1, I_1, J)$ | C++ · `y3_cluster_cpp` |
 | 11 | {doc}`bsel <selection/bsel>` | bias plateaus $(B_{\rm small}, B_{\rm large})$ | Python · `y3_cluster_cpp` |
-| 12 | {doc}`shear_prj_frozen_physics <observables/shear_projection>` | projection shear $\gamma_t^{\rm prj}(R)$ | C++ · `y3_cluster_cpp` |
+| 12 | {doc}`ShearPrjFastMass <observables/shear_projection>` | projection shear $\gamma_t^{\rm prj}(R)$ (fast_mass, des_y3) | C++ · `y3_cluster_cpp` |
 | 13 | {doc}`likelihoods <observables/likelihood>` | Gaussian $\log L$ | Python · `y3_cluster_cpp` |
 
-## Per-module timing
-
-Wall-clock per pipeline evaluation (CosmoSIS `timing = T` on the
-reference run; CV = std/mean). The whole forward model costs
-**712 ± 19 ms per sample**:
-
-| Module | mean (ms) | % of pipeline | std (ms) | CV |
-|---|---:|---:|---:|---:|
-| `sel_function` | 197 | 27.7% | 18 | 0.09 |
-| `MfTinker` | 155 | 21.8% | 6 | 0.04 |
-| `halo_model` | 141 | 19.8% | 2 | 0.01 |
-| `shear_prj_frozen_physics` | 82 | 11.5% | 4 | 0.04 |
-| `b_sel_marg` | 66 | 9.3% | 1 | 0.01 |
-| `Shear1hMisSel` | 28 | 3.9% | 1 | 0.02 |
-| `NumCountsSel` | 22 | 3.1% | <1 | 0.02 |
-| `bsel` | 16 | 2.2% | 1 | 0.05 |
-| `cp_camb` | 4 | 0.6% | 1 | 0.35 |
-| `GrowthFactor` / `consistency` / `average_sigma_crit_inv` / `likelihoods` | ~0 | <0.1% | — | — |
-| **Total** | **712** | 100% | 19 | 0.03 |
-
-The budget is dominated by the Python tabulation stages
-(`sel_function`, `halo_model`) and the Fortran mass function — the C++
-observable integrals together cost less than 200 ms. Timings are
-near-deterministic (CV ≤ 0.09 everywhere but the trivially cheap
-`cp_camb`), the design goal of the fixed-GL evaluators
-({doc}`numerics/index`).
+```{note}
+Stages 1–7 and 10–11 are byte-for-byte the same modules as the DES Y1
+pipeline ({doc}`variants`). Only 8, 9, and 12 differ, and each is
+algorithmically identical to its DES Y1 counterpart — `NumCountsFastMass`
+"by identity" with `NumCountsSel`, `Shear1hFastMass` bitwise-equal to
+`Shear1hMisSel`, `ShearPrjFastMass` sharing the same `ShearPrjCore` as
+`shear_prj_frozen_physics` — just under the `src/pipelines/des_y3`
+namespace so both generations can co-run in one pipeline for comparison
+(their output DataBlock sections never collide).
+```
 
 Data flow (edge labels are the DataBlock sections passed between
 modules; blue = cosmology quantities, orange = selection effects,
 green = cluster observables, grey = likelihood):
 
 ```{image} _static/img/pipeline_dataflow.png
-:alt: Data flow of the mock_mcmc_buzzard.ini reference pipeline
+:alt: Data flow of the y3_ref.ini reference pipeline
 :width: 100%
 ```
 
@@ -88,8 +76,8 @@ docs/source/_static/img/pipeline_dataflow.png -b white -s 2`.)
 
 | Repository | Role | Env variable |
 |---|---|---|
-| [y3_cluster_cpp](https://github.com/estevesjh/y3_cluster_cpp) | C++/CUDA modules (built once, {doc}`installation`) + Python modules | `Y3_CLUSTER_CPP_DIR=/pscratch/sd/j/jesteves/y3_cluster_cpp` |
-| [des-nersc-cluster-scripts](https://github.com/estevesjh/des-nersc-cluster-scripts) | this ini, values, data vectors, sbatch scripts (deployed as `des-cluster-nersc`) | `DES_CLUSTER_NERSC_DIR=/pscratch/sd/j/jesteves/github/des-cluster-nersc` |
+| [y3_cluster_cpp](https://github.com/estevesjh/y3_cluster_cpp) | C++/CUDA modules ({doc}`installation`) + Python modules, `src/pipelines/des_y3` (this pipeline's 3 swapped modules) | `Y3_CLUSTER_CPP_DIR=/pscratch/sd/j/jesteves/y3_cluster_cpp` |
+| [des-nersc-cluster-scripts](https://github.com/estevesjh/des-nersc-cluster-scripts) | values file, data vectors, sbatch scripts (deployed as `des-cluster-nersc`) | `DES_CLUSTER_NERSC_DIR=/pscratch/sd/j/jesteves/github/des-cluster-nersc` |
 | [cosmosis-standard-library](https://github.com/joezuntz/cosmosis-standard-library) | `consistency`, `GrowthFactor`, `MfTinker` | `COSMOSIS_STANDARD_LIBRARY` |
 | [camb-emulator](https://github.com/estevesjh/camb-emulator) | trained CosmoPower emulators read by `cp_camb` | (paths in the `[cp_camb]` section) |
 
@@ -109,113 +97,34 @@ source ${COSMOSIS_REPO_DIR}/setup-cosmosis-nersc \
        /global/common/software/des/common/Conda_Envs/y3cl_je
 ```
 
+`NumCountsFastMass.so`, `Shear1hFastMass.so`, and `ShearPrjFastMass.so`
+build alongside every other module — no separate build step — via the
+normal {doc}`installation` recipe; they register in
+`src/modules/CMakeLists.txt` under the `des_y3` block.
+
 ## Values, priors, data vector, covariance
 
-- **Values**:
-  [`mock_mcmc_widePlanck_values.ini`](https://github.com/estevesjh/des-nersc-cluster-scripts/blob/9fd24ddc075d394af4e20241bda716ac4d529fcb/cosmosis-models/mock_mcmc_widePlanck_values.ini)
-  — 10 varied parameters, flat priors from the `[min start max]` boxes
-  (there is **no separate priors file**):
-
-  | Parameter | min | start | max |
-  |---|---|---|---|
-  | `cosmological_parameters/h0` | 0.473 | 0.6766 | 0.873 |
-  | `cosmological_parameters/omega_m` | 0.11 | 0.311049 | 1.0 |
-  | `cosmological_parameters/omega_b` | 0.02 | 0.048975 | 0.10 |
-  | `cosmological_parameters/n_s` | 0.8 | 0.9665 | 1.15 |
-  | `cosmological_parameters/sigma8` | 0.5 | 0.8238 | 1.5 |
-  | `cluster_mor/log10_Mmin` | 10.0 | 11.4 | 13.0 |
-  | `cluster_mor/log10_ratio` | 1.0 | 1.3 | 1.5 |
-  | `cluster_mor/alpha` | 0.4 | 0.86 | 1.4 |
-  | `cluster_mor/epsilon` | −1.0 | 0.0 | 1.0 |
-  | `cluster_mor/sigma_lambda` | 0.05 | 0.18 | 0.50 |
-
-  Fixed: `mnu = 0` (the emulator's growth rescaling assumes
-  scale-independent $D(z)$), `w = -1`, `wa = 0`,
-  `cluster_abundance/{hmf_s = 0, hmf_q = 1}`, `photoz/delta_z = 0`.
-  `log10_ratio = \log_{10}(M_1/M_{\rm min})` replaces `log10_M1` to break
-  the box-prior degeneracy. No `[miscentering]` section →
-  `Shear1hMisSel` uses its in-code defaults
-  $(f_{\rm mis}, \tau_{\rm mis}) = (0.22, 0.17)$.
-
-- **Data vector**: `${DES_CLUSTER_NERSC_DIR}/data/mock/mock_dv_buzzard.npz`
-  — the Buzzard simulation measurement (committed in the repo; its
-  builder `validations/build_buzzard_datavector.py` is referenced by the
-  driver script but not currently committed). Keys: `data_NC (12,)`,
-  `data_Shear (180,)` (12 bins × **15 radii**,
-  $R \in [0.0426, 24.877]$ cMpc/$h$, bin-major), `invcov_NC (12, 12)`,
-  `invcov_Shear (180, 180)`, plus the embedded fiducial truth
-  (`fiducial_param_names/values`).
-
-- **Covariance**: the shear inverse covariance is the DES Y1 WL layout
-  (`y1_rerun/data_files/wl_cov.txt`, 180 × 180); the number-count inverse
-  covariance is the full Y1 matrix (`Cov_ij_bestfit_DESY1_105.txt`), not
-  diagonal Poisson.
+Same as the DES Y1 pipeline ({doc}`variants`) — this ini's `[pipeline]
+values` line points at the identical
+[`mock_mcmc_widePlanck_values.ini`](https://github.com/estevesjh/des-nersc-cluster-scripts/blob/9fd24ddc075d394af4e20241bda716ac4d529fcb/cosmosis-models/mock_mcmc_widePlanck_values.ini):
+10 varied parameters (5 cosmology + 5 HOD), flat priors from the
+`[min start max]` boxes, no separate priors file. See {doc}`variants`
+for the full parameter table, data-vector, and covariance details —
+they don't change with this implementation swap.
 
 ## Commands
 
-Smoke test (single sample, `test` sampler — logL is finite but **not**
-$\approx 0$: the Buzzard run is a recovery test against an external
-simulation, not a self-closure):
+Smoke test (single sample, `test` sampler):
 
 ```bash
-cd ${DES_CLUSTER_NERSC_DIR}
-source fast-cpu/setup_env.sh
-srun -n 1 cosmosis cosmosis-models/mock_mcmc_buzzard.ini -p runtime.sampler=test
+cd ${Y3_CLUSTER_CPP_DIR}
+cosmosis docs/figs/y3_ref.ini
 ```
 
-The committed end-to-end driver is
-[`fast-cpu/build_buzzard_dv.sh`](https://github.com/estevesjh/des-nersc-cluster-scripts/blob/9fd24ddc075d394af4e20241bda716ac4d529fcb/fast-cpu/build_buzzard_dv.sh)
-(debug QOS, 25 min): builds the data vector, asserts its shapes, and runs
-the smoke test.
-
-Production (PolyChord, 64 MPI ranks, shared QOS, ~9 h — the pattern of
-`fast-cpu/mock_polychord.sh` with this ini; the completed production run
-is job 56588673):
-
-```bash
-OUTDIR=/pscratch/sd/j/jesteves/cluster_lib/chains/mock_mcmc/buzzard/polychord
-mkdir -p ${OUTDIR}/clusters
-srun -n 64 cosmosis --mpi cosmosis-models/mock_mcmc_buzzard.ini \
-     -p runtime.sampler=polychord runtime.resume=F \
-        polychord.live_points=500 polychord.base_dir=${OUTDIR} \
-        output.filename=${OUTDIR}/chain.txt
-```
-
-```{warning}
-Three ini gotchas when launching production runs:
-
-1. `[runtime]` defaults to `sampler = emcee`, `resume = T` — a fresh
-   PolyChord run must override both on the command line.
-2. The `[polychord]` section of the Buzzard ini uses non-CosmoSIS key
-   names (`nlive`, `nrepeat`, …); the CosmoSIS names are `live_points`,
-   `num_repeats`, `tolerance`, `base_dir`, `random_seed`. Pass them via
-   `-p` as above, and `mkdir -p ${OUTDIR}/clusters` first — without
-   `base_dir` PolyChord aborts with "Cannot open file ./clusters/…".
-3. Under MPI on Lustre add `-p output.lock=F` (all ranks race for the
-   POSIX lock on the chain file otherwise).
-```
-
-## Sampler and output configuration
-
-```ini
-[runtime]
-sampler = emcee            ; overridden per run: test | apriori | emcee | polychord
-root = ${COSMOSIS_SRC_DIR}
-resume = T
-
-[emcee]
-walkers = 64               ; pair with `cosmosis --smp=64`
-samples = 10000
-nsteps = 50
-
-[output]
-filename = /pscratch/sd/j/jesteves/cluster_lib/chains/mock_mcmc/buzzard/chain.txt
-format = text
-```
-
-Chain columns: the 10 varied parameters in values-file order, then
-`prior like post weight`. Post-processing notebooks and convergence plots
-live in `des-nersc-cluster-scripts/chains/`.
+Production sampling follows the same override pattern as the DES Y1
+pipeline ({doc}`variants`) — e.g.
+`-p runtime.sampler=polychord runtime.resume=F polychord.live_points=500 ...` —
+substituting `y3_ref.ini` for `mock_mcmc_buzzard.ini`.
 
 ## What the likelihood compares
 
@@ -226,9 +135,25 @@ $$\log L = -\tfrac12\Big[
 \gamma_t^{\rm theory}(R \mid i) =
 \frac{N_i[\gamma_t^{1h,\rm full}](R)}{N_i[1]} + \gamma_t^{\rm prj}(R \mid i),$$
 
-12 number counts + 180 shear points. Details: {doc}`observables/likelihood`
-— including one open shape-contract caveat: the committed
-`likelihood_cp.py` still hard-codes the 10-radii (120-point) layout of
-the widePlanck variant and must be set to `_SHEAR_N_R = 15` for the
-Buzzard data vector. Pipeline variants (self-closure widePlanck run,
-10-radii grid, conventional $1h{+}2h$): {doc}`variants`.
+12 number counts + 180 shear points, unchanged from the DES Y1 pipeline
+— identical theory-vector definition, only the modules computing
+$N_i[1]$, $N_i[\gamma_t^{1h}]$, and $\gamma_t^{\rm prj}$ differ. Details:
+{doc}`observables/likelihood`. The traditional $1h{+}2h$ composition
+(`Shear1h2hMax`) is available as a model option, not part of this
+reference pipeline — see {doc}`variants`.
+
+```{warning}
+`y3_buzzard/likelihood_cp.py` hardcodes the DES Y1 output section names
+(`numcountssel`, `shear1hmissel`, `shear_prj`). The `des_y3` fast_mass
+modules deliberately publish under their own sections
+(`numcounts_fast_mass`, `shear1h_fast_mass`, `shear_prj_fast_mass`/
+`dsigma_prj_fast_mass`) instead of aliasing to the DES Y1 names — by
+design, so both generations can co-run in one pipeline for comparison
+(a DataBlock `put_val` does not overwrite an existing key). Running
+`y3_ref.ini` as checked in demonstrates the swapped modules and their
+DataBlock contract, but does **not** yet produce a likelihood value
+end-to-end: that needs either a small alias step (matching what
+`shear_prj_frozen_physics` already does for its own section) or an
+updated `likelihood_cp.py` that reads the `des_y3` section names. Not
+addressed in this pass — see the open review discussion.
+```

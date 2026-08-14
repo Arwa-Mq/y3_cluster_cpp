@@ -72,7 +72,7 @@ regression values from the executed run):
 **Expected lensing prediction**: the 120-point ΔΣ vector stored as
 `data_Shear` in the generated `.npz` (range 7.49–148.0
 $h\,M_\odot/\mathrm{pc}^2$ at fiducial); its two-composition breakdown
-is shown in the {doc}`science chapter figure <../science/index>`.
+is shown in the {doc}`science chapter figure <../math/index>`.
 Regenerating the mock and rerunning the closure after any code change
 is the end-to-end regression check.
 

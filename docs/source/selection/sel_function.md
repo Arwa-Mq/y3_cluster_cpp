@@ -73,7 +73,7 @@ The recipe, per sample:
 
 The Python kernels match the C++ models
 (`src/models/mor_hod_t.hh`, `src/models/richness_kernel_t.hh`)
-line-for-line. Full derivation: {doc}`../science/index`.
+line-for-line. Full derivation: {doc}`../math/index`.
 
 ## CosmoSIS setup
 

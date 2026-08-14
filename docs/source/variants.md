@@ -1,19 +1,40 @@
 # Pipeline variants
 
-The main walkthrough documents only the `mock_mcmc_buzzard.ini` path.
-This page lists every retained variant: what changes, which observable
-changes, its status (comparative / validation-only), and how its theory
-vector differs from the reference.
+The main walkthrough ({doc}`running`) documents the DES Y3 reference
+pipeline (`y3_ref.ini`), which swaps three DES Y1 production modules
+for algorithmically-identical `src/pipelines/des_y3` fast_mass
+implementations. This page lists: the DES Y1 pipeline those modules
+replace, and every other retained variant — what changes, which
+observable changes, its status (comparative / validation-only), and how
+its theory vector differs from the reference.
+
+## DES Y1 pipeline — `mock_mcmc_buzzard.ini`
+
+The production pipeline `y3_ref.ini` mirrors, byte-identical except for
+the three observable stages:
+
+| DES Y3 reference (`y3_ref.ini`) | DES Y1 pipeline (`mock_mcmc_buzzard.ini`) | Relationship |
+|---|---|---|
+| `NumCountsFastMass` | `NumCountsSel` | algorithmically identical ("by identity") |
+| `Shear1hFastMass` | `Shear1hMisSel` | bitwise-equivalent |
+| `ShearPrjFastMass` | `shear_prj_frozen_physics` | same `ShearPrjCore`/`ShearPrjFrozenPhysics` family, exact-$z$ instead of frozen |
+
+Everything else — `consistency`, `GrowthFactor`, `cp_camb`, `MfTinker`,
+`halo_model`, `average_sigma_crit_inv`, `sel_function`, `b_sel_marg`,
+`bsel`, `likelihoods` — is the same module in both pipelines. See
+{doc}`running`'s warning about `likelihood_cp.py` section-name
+compatibility before running `y3_ref.ini` end-to-end.
 
 | Variant | Modules changed | Observable changed | Status |
 |---|---|---|---|
+| DES Y1 pipeline (`mock_mcmc_buzzard.ini`) | `NumCountsFastMass`/`Shear1hFastMass`/`ShearPrjFastMass` → `NumCountsSel`/`Shear1hMisSel`/`shear_prj_frozen_physics` | none (same theory vector) | previous-generation reference, see above |
 | widePlanck self-closure (`mock_mcmc_cp_camb.ini`) | none (data + grids + `unity = T`) | $\Delta\Sigma$ on 10 radii instead of $\gamma_t$ on 15 | comparative (closure + sampler A/B) |
 | Mock data-vector writer (`generate_mock_dv.ini`) | `likelihoods` → `generate_mock_dv` | none (writes the DV) | tooling |
 | Full projection evaluator (`shear_prj`) | `shear_prj_frozen_physics` → `ShearPrjEvaluator` | same $\gamma_t^{\rm prj}$, exact $z$-resolved clustered channel | validation-only |
 | Adaptive projection backends (`ShearPrjGsl`, `ShearPrjCuhre`, `ShearPrjFrozenCuhre`) | projection stage | same, adaptive quadrature | validation-only |
 | Centred one-halo (`Shear1hSel`) | `Shear1hMisSel` → `Shear1hSel` | $\gamma_t^{1h}$ without miscentering | historical / validation |
 | PAGANI selection-bias benchmarks (`P1/I1/I2PaganiIntegrand`) | `b_sel_marg` → 3 GPU modules | same $(P_1, I_1, I_2)$ | validation-only |
-| Conventional $1h{+}2h$ composition | `+ BiasWeightedSel`, `halo_model` 2h branch, no projection stage | $\gamma_t = \langle\gamma^{1h}\rangle + \langle b\rangle\,\Delta\Sigma_{2h}\Sigma_{\rm crit}^{-1}$ | comparative (see below) |
+| **Traditional $1h{+}2h$ max model** (`Shear1h2hMax`) | `+ halo_model` 2h branch, no projection stage | $\gamma_t = \max(\gamma^{1h}, \langle b\rangle\,\Delta\Sigma_{2h})\,\Sigma_{\rm crit}^{-1}$ | **model option** (see below) |
 | Population diagnostics (`MassWeightedSel`, `BiasWeightedSel`, `n_operator_ratios`) | added after `NumCountsSel` | adds $\langle M\rangle_i$, $\langle b\rangle_i$ | diagnostics |
 
 ## widePlanck self-closure — `mock_mcmc_cp_camb.ini`
@@ -92,23 +113,38 @@ the fixed-GL co-computing path is $\sim 10^3\times$ faster on the wall
 grid (0.17 s vs 208 s), and PAGANI computes $I_2$ rather than $J$, so it
 inherits the $I_2 - I_1$ cancellation the production module avoids.
 
-## Conventional 1h+2h composition
+## Traditional 1h+2h max model — `Shear1h2hMax`
 
 The pre-projection shear model: run `halo_model` with
-`compute_lensing_2h = T` ({doc}`observables/second_halo_term`), add
-`BiasWeightedSel` for $\langle b\rangle_i = N_i[b]/N_i[1]$, and assemble
+`compute_lensing_2h = T` ({doc}`observables/second_halo_term`), and
+compose the one-halo and biased two-halo terms by the **pointwise max**
+(Hayashi & White 2008, the DES Y1 lensing-analysis prescription — not a
+sum):
 
-$$\gamma_t^{\rm theory}(R \mid i) =
-\frac{N_i[\gamma_t^{1h}](R)}{N_i[1]}
-+ \langle b\rangle_i\, \Delta\Sigma_{2h}(R, z_i)\,
-\langle\Sigma_{\rm crit}^{-1}\rangle .$$
+$$\Phi_{\max}(R, \ln M, z \mid i) = \max\!\big(
+\Delta\Sigma_{\rm cl}(R, \ln M \mid i),\;
+b(\ln M, z)\,\Delta\Sigma_{\rm hh}(R, z)\big), \qquad
+\gamma_t^{\rm theory}(R \mid i) =
+N_i[\Phi_{\max}](R)\,\langle\Sigma_{\rm crit}^{-1}\rangle / N_i[1].$$
+
+Implemented by
+[`Shear1h2hMax`](https://github.com/estevesjh/y3_cluster_cpp/blob/pipelines/des_y3/src/pipelines/des_y3/observables/shear_1h2h/fast_mass/python/shear1h2h_max.py)
+(`shear1h2h_max.py`, C++ `Shear1h2hMax.cc`, CUDA
+`Shear1h2hMaxGpu.cu`) — a **model option**, not part of the reference
+pipeline ({doc}`../running`, {doc}`observables/second_halo_term`).
+Unlike the one-halo operator, the two-halo term is $z$-dependent, so the
+redshift integral cannot be contracted past the profile the way
+`fast_mass` does elsewhere — `Shear1h2hMax` keeps a $z$-resolved
+tabulated weight and does a double fixed-GL contraction instead.
 
 vs the reference's $1h^{\rm mis} + {\rm prj}$: no miscentering
 suppression at small $R$ and no $b_{\rm sel}$ boost at large $R$
-(quantified in {doc}`observables/second_halo_term`). Status:
-**comparative** — and currently assembled offline from
-`BiasWeightedSel` + `xi_nl`, because the wired `SigmaTotSel`/
-`DSigmaTotSel` modules are broken ({doc}`modules/historical`).
+(quantified in {doc}`observables/second_halo_term`, once its comparison
+figure is regenerated with this correct composition — see that page's
+note). Status: **model option** — and the wired production
+`SigmaTotSel`/`DSigmaTotSel` modules remain broken
+({doc}`modules/historical`), which is why `Shear1h2hMax` reads
+`haloModel/dSigma_hh` directly rather than through them.
 
 ## Population diagnostics
 

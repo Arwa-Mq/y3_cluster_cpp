@@ -1,6 +1,6 @@
 # Shear Projection
 
-`C++` · `y3_cluster_cpp` · `Cluster observable` · module `shear_prj_frozen_physics` · `82 ms/sample`
+`C++` · `y3_cluster_cpp` (`src/pipelines/des_y3`) · `Cluster observable` · module `ShearPrjFastMass` · `~82 ms/sample`
 
 Computes $\Sigma^{\rm prj}$ — in the paper's language, **the two-halo
 term sourced by correlated line-of-sight structure**, carrying the
@@ -12,36 +12,41 @@ $\gamma_t^{\rm theory} = \langle\gamma_t^{1h}\rangle + \gamma_t^{\rm prj}$.
 
 ## Script
 
-- Model: [`src/models/sigma_prj_frozen_t.hh`](https://github.com/estevesjh/y3_cluster_cpp/blob/d7feb7504ed5dfcad84f99a1791af8a55c858aa0/src/models/sigma_prj_frozen_t.hh)
-  (`y3_cluster::ShearPrjFrozenPhysics`, "Option C" — frozen-physics
-  fixed-grid reduction of the full `ShearPrjEvaluator`, which it shares
-  the $\theta$-grid and $z$-grid builders with via `sp_detail`).
-- Module driver: [`src/modules/sigma_prj_cpu/ShearPrjFrozenPhysics.cc`](https://github.com/estevesjh/y3_cluster_cpp/blob/d7feb7504ed5dfcad84f99a1791af8a55c858aa0/src/modules/sigma_prj_cpu/ShearPrjFrozenPhysics.cc).
+- Model: [`src/models/sigma_prj_t.hh`](https://github.com/estevesjh/y3_cluster_cpp/blob/pipelines/des_y3/src/models/sigma_prj_t.hh)
+  (`sp_detail::ShearPrjCore` — the shared $\theta$-grid/$z$-grid core
+  also used by DES Y1's `ShearPrjEvaluator`/`ShearPrjFrozenPhysics`,
+  {doc}`../variants`).
+- Module driver: [`src/pipelines/des_y3/observables/shear_projection/fast_mass/cpp/ShearPrjFastMass.cc`](https://github.com/estevesjh/y3_cluster_cpp/blob/pipelines/des_y3/src/pipelines/des_y3/observables/shear_projection/fast_mass/cpp/ShearPrjFastMass.cc)
+  — des_y3-namespaced wrapper over the same `ShearPrjCore`, own module
+  label and output section.
 - Compiled library loaded by CosmoSIS:
-  `${Y3_CLUSTER_CPP_DIR}/release-build/src/modules/sigma_prj_cpu/ShearPrjFrozenPhysics.so`.
+  `${Y3_CLUSTER_CPP_DIR}/release-build/src/modules/des_y3_shear_prj_fast_mass_cpp/ShearPrjFastMass.so`.
 - Disk tables (loaded once at construction, $c = 4$, **single**/delta
-  offset kernel — not the gamma kernel `Shear1hMisSel` uses):
+  offset kernel — not the gamma kernel {doc}`shear_halo` uses):
   `data/nfw_off_center/table_1000_1e-03_5e+03_single_{logx, logxmis}.txt`,
   `…_log_deltasigma_single.txt`.
 
 ## DES Y3 implementations
 
-The production frozen-physics module above remains path-stable. The new
-namespace under `src/pipelines/des_y3/observables/shear_projection` contains:
+This module is the `fast_mass` cell — the reference pipeline's choice
+per `src/pipelines/des_y3/README.md`'s own "Reference pipeline choices"
+table. The namespace under
+`src/pipelines/des_y3/observables/shear_projection` also contains:
 
 | Strategy | Backend | Implementation and status |
 |---|---|---|
 | `full_ltmz` | CUDA | `DSigmaPrjFullLtmzGpu.so`; adaptive $(\ln\theta,z,\ln M)$ PAGANI reference, with the innermost-radius convergence study still open |
 | `fast_mass` | Python | Exact-$z$ reference port of `ShearPrjCore` |
-| `fast_mass` | C++ | `ShearPrjFastMass.so`; exact-$z$ core emitting $\Delta\Sigma$ and shear in one pass |
-| `fast_mass` | CUDA | `ShearPrjFrozenGpu.so`; CUDA implementation of the explicitly frozen production machinery |
+| `fast_mass` | **C++ (this page)** | `ShearPrjFastMass.so`; exact-$z$ core emitting $\Delta\Sigma$ and shear in one pass |
+| `fast_mass` | CUDA | `ShearPrjFrozenGpu.so`; CUDA implementation of the explicitly frozen DES Y1 machinery |
 | `radial_series` | — | Planned, not implemented |
 
 Here `fast_mass` means that the redshift contraction occurs outside the
-radial operator; it does not imply frozen physics. The CUDA cell is labelled
-frozen because it deliberately reproduces `ShearPrjFrozenPhysics.so`, whereas
-the Python and C++ cells retain the exact redshift dependence. See
-{doc}`../pipeline_organization` for the validation policy.
+radial operator; it does not imply frozen physics — this module keeps
+the exact redshift dependence, unlike DES Y1's frozen-physics
+`shear_prj_frozen_physics` ({doc}`../variants`). The CUDA cell is
+labelled frozen because it deliberately reproduces that DES Y1 module.
+See {doc}`../pipeline_organization` for the validation policy.
 
 ## Numerical framework
 
@@ -91,7 +96,7 @@ construction, exclusion mask, channel contractions, table lookups, cost
 — lives in {doc}`../numerics/index`,
 §"The shear-projection recipe, step by step".**
 
-Model derivation: {doc}`../science/index` (projection lensing);
+Model derivation: {doc}`../math/index` (projection lensing);
 selection-bias inputs: {doc}`../selection/bsel`; full-fidelity and
 adaptive validation backends (`ShearPrjEvaluator`, `ShearPrjGsl`,
 `ShearPrjCuhre`): {doc}`../variants`.
@@ -99,18 +104,13 @@ adaptive validation backends (`ShearPrjEvaluator`, `ShearPrjGsl`,
 ## CosmoSIS setup
 
 ```ini
-[shear_prj_frozen_physics]
-file = ${Y3_CLUSTER_CPP_DIR}/release-build/src/modules/sigma_prj_cpu/ShearPrjFrozenPhysics.so
+[ShearPrjFastMass]
+file = ${Y3_CLUSTER_CPP_DIR}/release-build/src/modules/des_y3_shear_prj_fast_mass_cpp/ShearPrjFastMass.so
 zt_low      = 0.10
 zt_high     = 0.75
 lnm_low     = 29.9336
 lnm_high    = 35.6814
 R_max_cMpch = 35.0
-n_lnm       = 16
-n_per_seg   = 10
-n_zring     = 20
-n_zouter    = 20
-include_omega_z = 0
 lambda_bin  = <180-entry wall: 15 radii per (richness, zob) bin>
 zo_low      = <180 entries>
 zo_high     = <180 entries>
@@ -119,12 +119,14 @@ radii       = <180 entries: 0.0426 … 24.8771 cMpc/h per bin>
 
 (The four wall arrays are 180 entries each — 12 bins × 15 radii, bin
 slow / radius fast; full arrays in
-[the ini](https://github.com/estevesjh/des-nersc-cluster-scripts/blob/9fd24ddc075d394af4e20241bda716ac4d529fcb/cosmosis-models/mock_mcmc_buzzard.ini).)
+[`docs/figs/y3_ref.ini`](https://github.com/estevesjh/y3_cluster_cpp/blob/docs/sphinx-site/docs/figs/y3_ref.ini).)
 
 - Ordering: **after `bsel`** (needs the bias plateaus), `halo_model`,
   `MfTinker`, `cp_camb`, `average_sigma_crit_inv`; before `likelihoods`.
-- The ini section name must be `shear_prj_frozen_physics` — it is the
+- The ini section name must be `ShearPrjFastMass` — it is the
   hard-coded `module_label()`.
+- Left at `ShearPrjCore`'s class defaults for `n_lnm`/`n_per_seg`/
+  `n_zring`/`n_zouter` (24/30/20/20) — see Configuration options below.
 
 ## Configuration options
 
@@ -133,22 +135,21 @@ slow / radius fast; full arrays in
 | `lambda_bin`, `zo_low`, `zo_high`, `radii` | zipped wall grid (4 equal-length arrays) | $R$: cMpc/$h$ | 180 entries |
 | `zt_low`, `zt_high` | true-redshift envelope of the line-of-sight integral | — | 0.10, 0.75 |
 | `lnm_low`, `lnm_high` | mass GL limits | $\ln(M_\odot/h)$ | 29.9336, 35.6814 |
-| `n_lnm` | GL nodes in $\ln M$ (class default 24) | — | 16 |
-| `n_per_seg` | log-GL nodes per $\theta$ segment | — | 10 |
-| `n_zring`, `n_zouter` | ring-band / per-wing redshift nodes | — | 20, 20 |
-| `R_max_cMpch` | sets $\theta_{\max} = R_{\max}/D_A$ (class default 30) | cMpc/$h$ | 35.0 |
-| `include_omega_z` | multiply the $z$ integrand by the survey area $\Omega(z)$ — class default **on**, deliberately set to **0** here | — | 0 |
+| `n_lnm` | GL nodes in $\ln M$ | — | 24 (default, left unset) |
+| `n_per_seg` | log-GL nodes per $\theta$ segment | — | 30 (default, left unset) |
+| `n_zring`, `n_zouter` | ring-band / per-wing redshift nodes | — | 20, 20 (defaults) |
+| `R_max_cMpch` | sets $\theta_{\max} = R_{\max}/D_A$ | cMpc/$h$ | 35.0 |
 | `lob_centers` | richness centres for $R_\lambda$, $\theta_\lambda$ | — | 25 37.5 52.5 130 (default) |
 
-```{admonition} Why include_omega_z = 0
-:class: important
-$\Omega(z)$ belongs in cluster-count operators only; for a surface
-density it cancels between numerator and normalisation, and the sibling
-`ShearPrjEvaluator` hard-excludes it. The class default is *on* (matching
-the `ShearPrjGsl` diagnostic), so the ini overrides it. Verified
-empirically: with it on, fiducial self-closure breaks
-($\log L = -151.7$ instead of $\approx 0$); off, closure holds
-($-0.004$). See {doc}`../modules/survey_area`.
+```{admonition} No include_omega_z knob on this core
+:class: note
+`ShearPrjCore` (`src/models/sigma_prj_t.hh`, this module) never applies
+$\Omega(z)$ — it isn't a toggle here, unlike DES Y1's
+`ShearPrjFrozenPhysics`, which reads a separate, frozen-specific core
+with its own `include_omega_z` option (default **on**, explicitly set
+to 0 in the DES Y1 ini). $\Omega(z)$ belongs in cluster-count operators
+only; for a surface density it cancels between numerator and
+normalisation. See {doc}`../variants` and {doc}`../modules/survey_area`.
 ```
 
 ## DataBlock inputs
@@ -169,13 +170,16 @@ The photo-$z$ width $\sigma_z(z)$ comes from the compiled-in table
 
 ## DataBlock outputs
 
-Nine arrays, each of length 180 (total = `rnd` + `cl`):
+Six arrays, each of length 180:
 
 | DataBlock output | Meaning | Units / shape | Consumed by |
 |---|---|---|---|
-| `dsigma_prj_frozen_physics/{vals, rnd, cl}` | $\Delta\Sigma^{\rm prj}$: total, random-point channel, clustered channel | $M_\odot/(h\,\mathrm{pc}^2)$, `(180,)` | diagnostics |
-| `shear_prj_frozen_physics/{vals, rnd, cl}` | $\gamma_t^{\rm prj} = \Delta\Sigma^{\rm prj}\,\langle\Sigma_{\rm crit}^{-1}\rangle(z^{\rm ob})$ | dimensionless, `(180,)` | — |
-| `shear_prj/{vals, rnd, cl}` | **alias** of the row above, for drop-in compatibility with `likelihood_cp.py` / `generate_mock_dv.py` | `(180,)` | `likelihoods` |
+| `dsigma_prj_fast_mass/{vals, rnd, cl}` | $\Delta\Sigma^{\rm prj}$: total, random-point channel, clustered channel | $M_\odot/(h\,\mathrm{pc}^2)$, `(180,)` | diagnostics |
+| `shear_prj_fast_mass/{vals, rnd, cl}` | $\gamma_t^{\rm prj} = \Delta\Sigma^{\rm prj}\,\langle\Sigma_{\rm crit}^{-1}\rangle(z^{\rm ob})$ | dimensionless, `(180,)` | — |
 
-Do not load this module together with `ShearPrjEvaluator` in one
-pipeline: both write `shear_prj/*` and the later module wins.
+Unlike DES Y1's `shear_prj_frozen_physics` (which additionally aliases
+its output to `shear_prj/*` for drop-in `likelihood_cp.py`
+compatibility), this module does **not** write `shear_prj/*` — see the
+{doc}`../running` warning about wiring this into an actual likelihood
+evaluation. The two modules' real sections never collide, so both can
+run in one pipeline for comparison.

@@ -1,106 +1,40 @@
-# The CosmoSIS pipeline
+# How CosmoSIS works
 
-How `y3_cluster_cpp` fits into a complete CosmoSIS pipeline, and the full
-trace of the reference configuration.
+A brief primer — the reference pipeline itself is documented in
+{doc}`../running`; this page is background for readers new to CosmoSIS.
 
-## Three categories of modules
+CosmoSIS runs an ordered list of **modules**, each a shared library
+(`.so`) or Python script exposing `setup(options)` /
+`execute(block, config)` / `cleanup(config)`. `setup` runs once per
+process (reads ini options, builds fixed tables); `execute` runs once
+per sample (reads/writes the sample's state); `cleanup` runs once at
+exit.
 
-1. **CosmoSIS Standard Library** — parameter consistency
-   (`consistency`), linear growth (`GrowthFactor`), the Tinker mass
-   function (`MfTinker`), distances. The full-fidelity $P(k)$ path is
-   CAMB; the reference pipeline replaces it with the `cp_camb`
-   CosmoPower emulator.
-2. **This analysis's own modules** — the C++ `.so` files under
-   `release-build/src/modules/…` and the Python modules under
-   `y3_buzzard/` and `src/modules/…/*.py`, documented in the per-module
-   pages linked from {doc}`../running`.
-3. **External dependencies** — CUBA/cubacpp, PAGANI
-   (`gpuintegration`), GSL, `cluster_toolkit`, and the CUDA toolkit for
-   the GPU variants.
+The shared state is the **DataBlock**: a per-sample key-value store,
+keyed by `(section, name)`. A module reads its inputs with
+`block[section, name]` and writes outputs the same way — there is no
+other communication channel between modules, so the DataBlock *is* the
+pipeline's data contract. A `put_val` on a `(section, name)` that
+another module already wrote in the same sample does **not** overwrite
+the value — see the note on this in {doc}`../running` about co-running
+DES Y1 and DES Y3 modules for comparison.
 
-## The reference configuration
+A **sampler** drives the pipeline over many samples: `test` runs it
+once at the values-file starting point (a smoke test); `apriori` draws
+uniformly from the prior box; `emcee` and `polychord` do MCMC/nested
+sampling over the varied parameters, calling the pipeline (and reading
+the final `likelihoods` section) at every step.
 
-`des-nersc-cluster-scripts/cosmosis-models/mock_mcmc_buzzard.ini` @
-`9fd24dd` (branch `polychord-widePlanck-logspace-ab`) — the full trace
-is {doc}`../running`. Module list:
+Three categories of module in this analysis:
 
-```text
-consistency  GrowthFactor  cp_camb  MfTinker  halo_model
-average_sigma_crit_inv  sel_function
-NumCountsSel  Shear1hMisSel
-b_sel_marg  bsel
-shear_prj_frozen_physics
-likelihoods
-```
+1. **CosmoSIS Standard Library** — `consistency`, `GrowthFactor`,
+   `MfTinker` (external repository).
+2. **This analysis's own modules** — the C++/CUDA `.so` files and
+   Python modules documented per-module from {doc}`../running`.
+3. **External dependencies** — CUBA/cubacpp, PAGANI, GSL,
+   `cluster_toolkit`, the CUDA toolkit for GPU variants.
 
-Key facts:
-
-- **Samplers**: `test` for a single smoke sample; `apriori` for prior
-  coverage; `emcee` (64 walkers) and `polychord` (500 live points) for
-  production.
-- **Values**: `mock_mcmc_widePlanck_values.ini` — 5 cosmology + 5 HOD
-  parameters varied, flat priors.
-- **Data vector**: `mock_dv_buzzard.npz` — 12 number counts + 180 shear
-  points (15 radii); Y1-derived number-count and shear inverse
-  covariances. The widePlanck self-closure variant uses
-  `mock_dv_widePlanck_jkcov.npz` (120 points, jackknife shear
-  covariance) — see {doc}`../variants`.
-- **Naming convention**: C++ modules use CamelCase section names, Python
-  modules snake_case — except modules whose source hardcodes
-  `module_label()` (`b_sel_marg`, `shear_prj_frozen_physics`), which
-  keep their lowercase labels.
-
-Run pipelines from the sibling repositories with `Y3_CLUSTER_CPP_DIR`
-pointing at this tree, so the built `.so` files under
-`release-build/src/modules/…` resolve. Run management (sbatch scripts,
-chain handling, mock-data-vector generation) lives in
-`des-cluster-nersc`; Python↔C++ validation harnesses in
-`RichnessSelection`; the $P(k)$ emulator training in `camb-emulator`.
-
-New reference and alternative implementations are built from
-`src/pipelines/des_y3`, but the reorganization is additive: the pinned
-reference ini still loads the paths above. See {doc}`../pipeline_organization`
-for the strategy/backend layout and the implemented matrix. A namespace
-module should be added to an ini by its own documented `.py` or `.so` path;
-its presence in the source tree does not replace a production stage.
-
-## DataBlock trace
-
-`docs/figs/real_pipeline_extract.ini` is a trimmed copy of the
-**widePlanck variant** (10-radii grid, `unity = T`, `ShearPrjEvaluator`
-projection stage) that runs the first nine stages (consistency →
-`Shear1hMisSel`) under the test sampler, dumping every DataBlock section
-to `real_pipeline_extract_output/`. Shapes below are read directly from
-those dumps; stages past `Shear1hMisSel` are described from the module
-sources. Under the Buzzard reference configuration the shear vectors are
-180-long (15 radii), `sci_average` is physical rather than unity, and
-the projection sections are written by `ShearPrjFrozenPhysics`
-(`dsigma_prj_frozen_physics/*`, `shear_prj_frozen_physics/*`, plus the
-`shear_prj/*` alias) — per-module pages have the exact keys.
-
-| Stage (module) | Sections written | Key contents (names + shapes) |
-|---|---|---|
-| `consistency` (CSL) | `cosmological_parameters` (completed) | Derived-parameter closure: `h0`/`hubble`, `omega_m`, `omega_b`, `omega_c`, `omega_nu`, `omega_k`, `omega_lambda`, `ommh2`, `ombh2`, `omch2`, `sigma8`, `n_s`, `mnu`, `w`, `wa`, `baryon_fraction` (scalars) |
-| `GrowthFactor` (CSL) | `growth_parameters` | `z`, `a` (406 pts, $z \in [0, 4.05]$, `dz` = 0.01), `d_z` (linear growth), `f_z` (growth rate) |
-| `cp_camb` | `matter_power_lin`, `cdm_baryon_power_lin`, `distances` | `z` (50, $z \in [0,4]$), `k_h` (506), `p_k` (50 × 506); same grid for the no-neutrino $P_{cb}$; `distances/{z, a, d_a, d_c, d_l, d_m, h, mu, nz}` (50 pts) |
-| `MfTinker` (CSL) | `mass_function` | `m_h` (969), `z` (50), `dndlnmh` (50 × 969), plus `r_h`, `dndlnrh`; mass axis is $M_{\rm phys}/\Omega_m$ (the `HMF_t` consumers apply the $\ln(\Omega_m-\Omega_\nu)$ shift internally) |
-| `halo_model` | `halomodel`, `xi_nl` | `halomodel/{lnm (100), m_h (100), z (50), bias (50 × 100), concentration (100), rhoc, r_sigma (128), k (506), sigma_nfw (100 × 128), dsigma_nfw (100 × 128), hubble_shift, scale_shift}`; `xi_nl/{r (128), z (50), xi_nl (50 × 128)}`. With `compute_lensing_2h = F` no `Sigma_hh`/`dSigma_hh`/`Wp_hh` keys appear. `bias` is the sole halo-bias source downstream |
-| `prj_params` (smoke ini only) | `plob_ltr_params` | `z` (15 nodes, $z \in [0.10, 0.80]$) + the 8 EMG coefficient arrays `a_tau, b_tau, a_mu, b_mu, a_sig, b_sig, a_fprj, b_fprj` (each 15). The production configuration drops this module — `sel_function` and `bsel` fall back to the identical table embedded in `y3_buzzard/prj_params.py` |
-| `average_sigma_crit_inv` | `average_sigma_crit_inv` | `zlense` (50, $z \in [0.05, 0.80]$), `sci_average` (50). Under `unity = T` the dumped `sci_average` is identically 1.0; otherwise it integrates the `test_cluster_Y1.fits` source $n(z)$ against `distances/d_a` |
-| `sel_function` | `sel_function` | `lnm` (192), `z` (64), `s_stack` with shape (12, 64, 192) — the per-bin selection surface $S_{ij}(\ln M, z)$ |
-| `NumCountsSel` | `numcountssel` | `vals` (12): expected counts $N_i[1]$ per bin |
-| `Shear1hMisSel` | `shear1hmissel` | `vals` (120 = 12 bins × 10 `r_perp`): miscentering-weighted 1-halo stack numerators $N_i[\gamma_t^{1h,\rm full}](R)$; richness bin resolved as `bin_index % 4` |
-| `b_sel_marg` | `b_sel_marg_P1`, `b_sel_marg_I1`, `b_sel_marg_J` | Each: `vals` on the 12-point $(z_{\rm ob}, \lambda)$ wall + grid echo `zo_low`, `zo_high`, `lambda_bin`; $J = I_2 - I_1$ is computed directly to avoid cancellation at large $\theta$ |
-| `bsel` | `b_sel_marginalised` | `lob` (4), `zob` (3), `theta` (32), `vals` (4 × 3 × 32) — the $\lambda_{\rm true}$-marginalised $b_{\rm sel}(\theta)$ lookup — plus `b_eff`, `b_small`, `b_large` |
-| `shear_prj` | `shear_prj` | `vals`, `rnd`, `cl` (each 120): projection shear split as total = rnd + cl (uncorrelated random-point term + clustered $\xi_{\rm NL}$-weighted, $b_{\rm sel}$-modulated term) |
-| `likelihoods` | `likelihoods` | `likelihoods_like` (scalar Gaussian $\log L$); assembles the theory vector from `numcountssel/vals`, `shear1hmissel/vals`, `shear_prj/vals` against the mock `.npz` |
-
-Two notes on the dump set. First, the extract output also contains
-`cluster_abundance` (`hmf_q`, `hmf_s`), `cluster_mor` (`alpha`,
-`epsilon`, `log10_mmin`, `log10_ratio`, `sigma_lambda`), and `photoz`
-(`delta_z`) — sampler-parameter sections seeded from the values file,
-not module outputs; they are read by `sel_function`, `bsel`, and the
-MOR/HMF models. Second, every dumped section remains live in the current
-production pipeline (none are orphaned), though
-`average_sigma_crit_inv/sci_average` is unity-valued only under
-`unity = T`.
+Naming convention: C++ modules use CamelCase ini section names, Python
+modules snake_case — except modules whose source hardcodes
+`module_label()` (`b_sel_marg`, `bsel`, `shear_prj_frozen_physics`),
+which keep their lowercase labels regardless.

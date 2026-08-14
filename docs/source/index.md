@@ -17,7 +17,7 @@ implementations relate to the path-stable production modules.
 :maxdepth: 1
 :caption: Mathematical framework
 
-science/index
+math/index
 ```
 
 ```{toctree}
@@ -36,6 +36,7 @@ testing
 :caption: Cluster observables
 
 observables/number_counts
+modules/richness_mass
 observables/shear_halo
 observables/second_halo_term
 observables/shear_projection
@@ -61,15 +62,14 @@ cosmology/sigma_crit_inv
 
 selection/sel_function
 selection/bsel
+modules/survey_area
 ```
 
 ```{toctree}
 :maxdepth: 1
 :caption: Modules
 
-modules/richness_mass
 modules/redshift_kernel
-modules/survey_area
 ```
 
 ```{toctree}

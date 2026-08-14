@@ -1,6 +1,6 @@
 # Cluster Number Counts
 
-`C++` · `y3_cluster_cpp` · `Cluster observable` · module `NumCountsSel` · `22 ms/sample`
+`C++` · `y3_cluster_cpp` (`src/pipelines/des_y3`) · `Cluster observable` · module `NumCountsFastMass` · `~22 ms/sample`
 
 Computes the expected cluster count $N_i[1]$ in each of the 12
 $(\lambda^{\rm ob}, z^{\rm ob})$ bins by integrating the halo mass function
@@ -9,31 +9,38 @@ of the theory vector and the denominator of the stacked one-halo shear.
 
 ## Script
 
-- Model: [`src/models/n_operator_sel_gl_t.hh`](https://github.com/estevesjh/y3_cluster_cpp/blob/d7feb7504ed5dfcad84f99a1791af8a55c858aa0/src/models/n_operator_sel_gl_t.hh)
-  (`y3_cluster::NumCountsSelGL` over `nosel_gl_detail::SelGLCore`).
-- Module driver: [`src/modules/num_counts_sel/NumCounts.cc`](https://github.com/estevesjh/y3_cluster_cpp/blob/d7feb7504ed5dfcad84f99a1791af8a55c858aa0/src/modules/num_counts_sel/NumCounts.cc)
-  (`DEFINE_COSMOSIS_SCALAR_EVALUATOR_MODULE`).
+- Model: [`src/models/n_operator_sel_gl_t.hh`](https://github.com/estevesjh/y3_cluster_cpp/blob/pipelines/des_y3/src/models/n_operator_sel_gl_t.hh)
+  (`nosel_gl_detail::SelGLCore` — the fixed Gauss-Legendre mass-weight
+  builder shared with {doc}`shear_halo`).
+- Module driver: [`src/pipelines/des_y3/observables/number_counts/fast_mass/cpp/NumCountsFastMass.cc`](https://github.com/estevesjh/y3_cluster_cpp/blob/pipelines/des_y3/src/pipelines/des_y3/observables/number_counts/fast_mass/cpp/NumCountsFastMass.cc)
+  (`DEFINE_COSMOSIS_SCALAR_EVALUATOR_MODULE`) — the des_y3-namespaced
+  wrapper, algorithmically identical to `NumCountsSelGL` ("by identity",
+  {doc}`../variants`), with its own module label and output section so
+  the two can co-run in one pipeline for comparison.
 - Compiled library loaded by CosmoSIS:
-  `${Y3_CLUSTER_CPP_DIR}/release-build/src/modules/num_counts_sel/NumCountsSel.so`.
+  `${Y3_CLUSTER_CPP_DIR}/release-build/src/modules/des_y3_numcounts_fast_mass_cpp/NumCountsFastMass.so`.
 
 ## DES Y3 implementations
 
-The production module above remains path-stable. New implementations follow
-the organization in {doc}`../pipeline_organization`:
+This module is the `fast_mass` cell — the reference pipeline's choice
+per `src/pipelines/des_y3/README.md`'s own "Reference pipeline choices"
+table. Other implementations follow the organization in
+{doc}`../pipeline_organization`:
 
 | Strategy | Backend | Implementation and status |
 |---|---|---|
 | `full_ltmz` | Python | Explicit $(\lambda_{\rm true},\ln M,z)$ reference; fixed GL |
-| `full_ltmz` | C++ | `NumCountsFullLtmz.so`; adaptive Cuhre reference |
+| `full_ltmz` | C++ | `NumCountsFullLtmz.so`; adaptive Cuhre reference (needs an added `plob_ltr_params` stage — {doc}`../variants`) |
 | `full_ltmz` | CUDA | `NumCountsFullLtmzGpu.so`; PAGANI reference |
-| `fast_mass` | Python | Importable re-expression of the production redshift contraction |
-| `fast_mass` | C++ | Production `NumCountsSel.so`, identical strategy |
+| `fast_mass` | Python | Importable re-expression of the redshift contraction |
+| `fast_mass` | **C++ (this page)** | `NumCountsFastMass.so` — algorithmically identical to DES Y1's `NumCountsSel.so` |
 
 The implementations live below
 `src/pipelines/des_y3/observables/number_counts`. `radial_series` does not
 apply because the counts operator has no radial profile ($f=1$). Accuracy is
 measured against `full_ltmz`; agreement with `NumCountsSel.so` is recorded
-separately as an identity check.
+separately as an identity check — this module is expected to be bitwise
+equal to it.
 
 ## Numerical framework
 
@@ -56,31 +63,28 @@ and each count is one 1-D mass sum — deterministic 0.02 s per sample vs
 the retired adaptive Cuhre path (mean 0.11 s, tail 1 s),
 grid-convergence error $< 0.05\%$. **The complete step-by-step recipe
 lives in {doc}`../numerics/index`, §"The number-counts and one-halo
-lensing recipe, step by step".** Derivation: {doc}`../science/index`.
+lensing recipe, step by step".** Derivation: {doc}`../math/index`.
 
 ## CosmoSIS setup
 
 ```ini
-[NumCountsSel]
-file = ${Y3_CLUSTER_CPP_DIR}/release-build/src/modules/num_counts_sel/NumCountsSel.so
-algorithm = cuhre
-eps_rel = 1.5e-3
-eps_abs = 1.0e-12
-max_eval = 1000000
-use_cartesian_product = T
+[NumCountsFastMass]
+file = ${Y3_CLUSTER_CPP_DIR}/release-build/src/modules/des_y3_numcounts_fast_mass_cpp/NumCountsFastMass.so
 bin_index = 0 1 2 3 4 5 6 7 8 9 10 11
 zt_low  = 0.05
 zt_high = 0.80
 lnm_low  = 29.9336
 lnm_high = 36.7300
+n_lnm = 96
+n_z   = 64
 ```
 
-- Build once on Perlmutter (see {doc}`../installation`); requires
-  `Y3_CLUSTER_CPP_DIR` so the `.so` and its data files resolve.
+- Build once (see {doc}`../installation`); requires `Y3_CLUSTER_CPP_DIR`
+  so the `.so` and its data files resolve.
 - Ordering: after `sel_function`, `MfTinker`, `cp_camb`.
-- `algorithm`/`eps_*`/`max_eval`/`use_cartesian_product` are legacy Cuhre
-  knobs, **ignored** by the current fixed Gauss–Legendre evaluator; they
-  remain in the ini for backward compatibility.
+- No adaptive-Cuhre knobs (`algorithm`/`eps_*`/`max_eval`/
+  `use_cartesian_product`) — this evaluator is fixed Gauss-Legendre only;
+  `n_lnm`/`n_z` are its node counts.
 
 ## Configuration options
 
@@ -105,8 +109,11 @@ lnm_high = 36.7300
 
 | DataBlock output | Meaning | Units / shape | Consumed by |
 |---|---|---|---|
-| `numcountssel/vals` | expected counts $N_i[1]$ per bin | `(12,)` | `likelihoods` (data block and shear normalisation) |
+| `numcounts_fast_mass/vals` | expected counts $N_i[1]$ per bin | `(12,)` | `likelihoods` (data block and shear normalisation) |
 
 The output section name is hard-coded in the module (deliberately not an
 ini knob: a CosmoSIS `[DEFAULT]` block would propagate an
 `output_section` value into every module and silently redirect writes).
+DES Y1's `NumCountsSel.so` writes `numcountssel/vals` instead — the two
+sections never collide, so both can run in the same pipeline for
+comparison ({doc}`../variants`).

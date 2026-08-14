@@ -1,39 +1,43 @@
 # One-Halo Lensing
 
-`C++` · `y3_cluster_cpp` · `Cluster observable` · module `Shear1hMisSel` · `28 ms/sample`
+`C++` · `y3_cluster_cpp` (`src/pipelines/des_y3`) · `Cluster observable` · module `Shear1hFastMass` · `~28 ms/sample`
 
 Computes the population-integrated one-halo tangential shear
 $N_i[\gamma_t^{1h,\rm full}](R)$ — the centred + miscentred NFW profile
 weighted by the same halo population as the number counts. The likelihood
-divides by `numcountssel/vals` to form the stacked per-cluster profile and
-adds the projection term.
+divides by `numcounts_fast_mass/vals` to form the stacked per-cluster
+profile and adds the projection term.
 
 ## Script
 
-- Model: [`src/models/n_operator_sel_gl_t.hh`](https://github.com/estevesjh/y3_cluster_cpp/blob/d7feb7504ed5dfcad84f99a1791af8a55c858aa0/src/models/n_operator_sel_gl_t.hh)
-  (`y3_cluster::Shear1hMisSelGL`, sharing `SelGLCore` with
-  `NumCountsSelGL`) +
-  [`src/modules/num_counts_sel/lensing_weights.hh`](https://github.com/estevesjh/y3_cluster_cpp/blob/d7feb7504ed5dfcad84f99a1791af8a55c858aa0/src/modules/num_counts_sel/lensing_weights.hh).
-- Module driver: [`src/modules/num_counts_sel/Shear1hMis.cc`](https://github.com/estevesjh/y3_cluster_cpp/blob/d7feb7504ed5dfcad84f99a1791af8a55c858aa0/src/modules/num_counts_sel/Shear1hMis.cc)
-  (`DEFINE_COSMOSIS_SCALAR_EVALUATOR_MODULE`).
+- Model: [`src/models/n_operator_sel_gl_t.hh`](https://github.com/estevesjh/y3_cluster_cpp/blob/pipelines/des_y3/src/models/n_operator_sel_gl_t.hh)
+  (`nosel_gl_detail::SelGLCore`, shared with {doc}`number_counts`) +
+  [`src/modules/num_counts_sel/lensing_weights.hh`](https://github.com/estevesjh/y3_cluster_cpp/blob/pipelines/des_y3/src/modules/num_counts_sel/lensing_weights.hh)
+  (unchanged production model, immutable dependency).
+- Module driver: [`src/pipelines/des_y3/observables/shear_1h2h/fast_mass/cpp/Shear1hFastMass.cc`](https://github.com/estevesjh/y3_cluster_cpp/blob/pipelines/des_y3/src/pipelines/des_y3/observables/shear_1h2h/fast_mass/cpp/Shear1hFastMass.cc)
+  (`DEFINE_COSMOSIS_SCALAR_EVALUATOR_MODULE`) — bitwise-equivalent to
+  DES Y1's `Shear1hMisSel.so` ({doc}`../variants`), own module label
+  and output section.
 - Compiled library loaded by CosmoSIS:
-  `${Y3_CLUSTER_CPP_DIR}/release-build/src/modules/num_counts_sel/Shear1hMisSel.so`.
+  `${Y3_CLUSTER_CPP_DIR}/release-build/src/modules/des_y3_shear_fast_mass_cpp/Shear1hFastMass.so`.
 - Disk tables: `data/nfw_off_center/*gamma*` — $1000 \times 1000$ log-log
   grids of the gamma-kernel miscentred NFW in
   $(R/r_s, R_{\rm mis}/r_s)$, loaded once at module construction.
 
 ## DES Y3 implementations
 
-The production module above remains path-stable. New implementations below
-`src/pipelines/des_y3/observables/shear_1h2h` provide the reference and fast
-cells described in {doc}`../pipeline_organization`:
+This module is the `fast_mass` cell — the reference pipeline's choice
+per `src/pipelines/des_y3/README.md`'s own "Reference pipeline choices"
+table. Other implementations below
+`src/pipelines/des_y3/observables/shear_1h2h` provide the reference and
+alternative cells described in {doc}`../pipeline_organization`:
 
 | Strategy | Backends | Implementation and status |
 |---|---|---|
 | `full_ltmz` | Python, C++, CUDA | Explicit $(\lambda_{\rm true},\ln M,z)$ one-halo miscentred references |
-| `fast_mass` | Python, C++ | Exact redshift contraction and direct mass sum; `Shear1hFastMass.so` is bitwise-equivalent to production |
-| `radial_series` | Python, C++ | Offline $U_\ell$ tables plus per-sample population moments; candidate implementation |
-| `fast_mass` max model | Python, C++, CUDA | Traditional $\max(1h,b\,2h)$ variant; implemented but its $\Delta\Sigma_{hh}$ input remains under investigation |
+| `fast_mass` | **C++ (this page)**, Python | Exact redshift contraction and direct mass sum; `Shear1hFastMass.so` is bitwise-equivalent to `Shear1hMisSel.so` |
+| `radial_series` | Python, C++ | Offline $U_\ell$ tables plus per-sample population moments; a review comment flags a possible double-counted miscentering term here — see {doc}`../variants` |
+| `fast_mass` max model | Python, C++, CUDA | `Shear1h2hMax` — traditional $\max(1h,b\,2h)$ model option, not part of this reference pipeline — see {doc}`../variants` |
 
 The radial-series tables are versioned under `data/radial_series` and are
 loaded, never regenerated, during sampling. The `full_ltmz` cells are the
@@ -84,25 +88,23 @@ step-by-step recipe lives in {doc}`../numerics/index`,
 §"The number-counts and one-halo lensing recipe, step by step".**
 
 Setting `miscentering/f_mis = 0` recovers the centred-only `Shear1hSel`
-result ({doc}`../variants`). Model derivation: {doc}`../science/index`;
+result ({doc}`../variants`). Model derivation: {doc}`../math/index`;
 miscentering model: {doc}`../systematics/index`.
 
 ## CosmoSIS setup
 
 ```ini
-[Shear1hMisSel]
-file = ${Y3_CLUSTER_CPP_DIR}/release-build/src/modules/num_counts_sel/Shear1hMisSel.so
-algorithm = cuhre
-use_cartesian_product = T
-eps_rel = 1.5e-3
-eps_abs = 1.0e-12
-max_eval = 1000000
+[Shear1hFastMass]
+file = ${Y3_CLUSTER_CPP_DIR}/release-build/src/modules/des_y3_shear_fast_mass_cpp/Shear1hFastMass.so
 bin_index = 0 1 2 3 4 5 6 7 8 9 10 11
 r_perp = 0.0426 0.0669 0.1045 0.1652 0.2607 0.4117 0.6505 1.0257 1.6181 2.5537 4.0265 6.3490 10.0107 15.7832 24.8771
 zt_low  = 0.05
 zt_high = 0.80
 lnm_low  = 29.9336
 lnm_high = 36.7300
+n_lnm = 96
+n_z   = 64
+lob_centers = 25.0 37.5 52.5 130.0
 ```
 
 - Ordering: after `sel_function`, `halo_model` (with
@@ -110,8 +112,8 @@ lnm_high = 36.7300
   `average_sigma_crit_inv`, `MfTinker`, `cp_camb`.
 - Grid: 12 bins × 15 radii = **180** points, matching the Y1 WL covariance
   layout (`wl_cov.txt`) asserted by the likelihood.
-- The `algorithm`/`eps_*`/`max_eval` Cuhre knobs are legacy and ignored by
-  the fixed-GL evaluator.
+- No adaptive-Cuhre knobs — fixed Gauss-Legendre only, same `n_lnm`/`n_z`
+  convention as {doc}`number_counts`.
 
 ## Configuration options
 
@@ -122,11 +124,14 @@ lnm_high = 36.7300
 | `lnm_low`, `lnm_high` | mass limits | $\ln(M_\odot/h)$ | 29.9336, 36.7300 |
 | `n_lnm`, `n_z` | GL nodes | — | 96, 64 (defaults) |
 | `lob_centers` | richness-bin centres driving $R_\lambda$ | — | 25 37.5 52.5 130 (default) |
-| `method` | `exact` = full GL mass sum; `idea2` = 2nd-order moment expansion | — | `exact` (default) |
+
+DES Y1's `Shear1hMisSel.so` additionally supports `method = idea2` (a
+2nd-order moment expansion); `Shear1hFastMass.so` always does the exact
+GL mass sum ({doc}`../variants`).
 
 ## DataBlock inputs
 
-Everything {doc}`NumCountsSel <number_counts>` reads, plus:
+Everything {doc}`NumCountsFastMass <number_counts>` reads, plus:
 
 | DataBlock input | Meaning | Units / shape | Produced by |
 |---|---|---|---|
@@ -139,4 +144,7 @@ Everything {doc}`NumCountsSel <number_counts>` reads, plus:
 
 | DataBlock output | Meaning | Units / shape | Consumed by |
 |---|---|---|---|
-| `shear1hmissel/vals` | $N_i[\gamma_t^{1h,\rm full}](R)$, bin slow / radius fast | `(180,)` | `likelihoods` |
+| `shear1h_fast_mass/vals` | $N_i[\gamma_t^{1h,\rm full}](R)$, bin slow / radius fast | `(180,)` | `likelihoods` |
+
+DES Y1's `Shear1hMisSel.so` writes `shear1hmissel/vals` instead — the
+two sections never collide ({doc}`../variants`).

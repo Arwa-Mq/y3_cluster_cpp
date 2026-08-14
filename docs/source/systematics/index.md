@@ -16,7 +16,7 @@ Miscentering enters the model in two distinct places:
   section (defaults $f_{\rm mis}=0.22$, $\tau_{\rm mis}=0.17$). The full
   model — offset kernels, azimuthal convolution, and the precomputed
   lookup tables — is documented in
-  {doc}`../science/index` §One-halo lensing and miscentering.
+  {doc}`../math/index` §One-halo lensing and miscentering.
 - miscentering of the **abundance selection**.
 
 ```{todo}
@@ -261,7 +261,7 @@ $$\gamma_t(R) = \Delta\Sigma(R)\,
 \langle\Sigma_{\rm crit}^{-1}\rangle,$$
 
 with the one-halo and projection contributions combined **additively**
-(see the composition in {doc}`../science/index`).
+(see the composition in {doc}`../math/index`).
 
 The earlier **reduced-shear** formulation,
 

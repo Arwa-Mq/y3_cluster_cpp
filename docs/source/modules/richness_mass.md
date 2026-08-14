@@ -133,7 +133,7 @@ Where the reference pipeline evaluates it:
   $\lambda^{\rm tr}$ marginalisation.
 
 Full derivation (log-normal alternative, EMG CDF closed form, quadrature
-placement): {doc}`../science/index`.
+placement): {doc}`../math/index`.
 
 ## Parameters (DataBlock)
 

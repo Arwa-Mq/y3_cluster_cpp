@@ -177,7 +177,7 @@ ltr_hi_factor  = 3.0
 |---|---|---|---|
 | `b_sel_marg_{P1, I1, J}/vals` | the $P[X]$ operators | `(12,)` each | `b_sel_marg` |
 | `mass_function/{m_h, z, dndlnmh}` | HMF (mass axis rescaled by $\Omega_m - \Omega_\nu$ explicitly) | — | `MfTinker` |
-| `halomodel/{m_h, z, bias}` | halo bias for $b_{\rm eff}$ | `(50, 100)` | `halo_model` |
+| `haloModel/{m_h, z, bias}` | halo bias for $b_{\rm eff}$ | `(50, 100)` | `halo_model` |
 | `cluster_mor/*` | HOD parameters | — | sampler (values file) |
 | `distances/{z, d_c}`, `cosmological_parameters/h0` | $\chi(z^{\rm ob})$ in cMpc/$h$ for $\theta_\lambda$ | — | `cp_camb`, `consistency` |
 

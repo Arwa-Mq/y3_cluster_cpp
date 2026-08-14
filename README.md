@@ -41,13 +41,16 @@ ctest -j 10
 
 With the modules built and the CosmoSIS environment active, run the
 single-sample smoke pipeline (predicts number counts, one-halo shear, and
-projection shear at the fiducial point):
+projection shear at the fiducial point using the `src/pipelines/des_y3`
+`fast_mass` C++ backends):
 
 ```bash
 cd $Y3_CLUSTER_CPP_DIR
-cosmosis cosmosis-models/mock_mcmc_cp_camb.ini
+cosmosis docs/figs/y3_ref.ini
 ```
 
-Outputs land in `smoke_full_sel_cp_camb_output/`. The production MCMC
-variant of this configuration lives in the `des-cluster-nersc`
-repository.
+Outputs land in `y3_ref_test_output/`. See the docs'
+[Running the reference pipeline](docs/source/running.md) page for the
+full module trace, environment setup, and a caveat about wiring this
+into an end-to-end likelihood evaluation. The production MCMC pipeline
+(DES Y1-generation modules) lives in the `des-cluster-nersc` repository.

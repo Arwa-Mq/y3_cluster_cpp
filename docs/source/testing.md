@@ -10,22 +10,10 @@ Run the configured suite with:
 ctest -j 6 --output-on-failure
 ```
 
-Use `ctest -N` for the exact target list in a particular build. The normal
-relative tolerance is `1e-3`; tighter checks are used for exact identities and
-looser bounds are called out where they measure a scientific approximation.
-
-Current cross-backend exception: `shear1h_cross_backend_test` has one
-deliberately failing comparison. Raw radial-series $\Delta\Sigma$ differs from
-the C++ `full_ltmz` oracle by 56–86% because
-`nfw_profile_family.py` uses a fixed `CONC = 4.0` instead of the per-sample
-Child18 concentration. The C++/Python radial-series identity and the other
-backend comparisons remain separate checks. See
-[`radial_series_vs_full_ltmz_defect.md`](https://github.com/estevesjh/y3_cluster_cpp/blob/docs/sphinx-site/docs/radial_series_vs_full_ltmz_defect.md).
-
-The current model-level exception is `nfw_dsigma_mis_test`: 29 of 30
-independent `cluster_toolkit` comparisons pass at `1e-3`, while one interior
-table point misses by 0.497%. This is retained as a strict failing test until
-the cause is understood; see
+Use `ctest -N` for the exact target list. Default relative tolerance is
+`1e-3`. Two known-failing tests are deliberate (real defects, not test
+bugs):
+[`radial_series_vs_full_ltmz_defect.md`](https://github.com/estevesjh/y3_cluster_cpp/blob/docs/sphinx-site/docs/radial_series_vs_full_ltmz_defect.md),
 [`nfw_dsigma_mis_defect.md`](https://github.com/estevesjh/y3_cluster_cpp/blob/docs/sphinx-site/docs/nfw_dsigma_mis_defect.md).
 
 ## Folder inventories

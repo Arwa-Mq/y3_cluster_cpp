@@ -14,12 +14,13 @@ Its ingredients are computed by the
 
 ```{admonition} Not active in the reference pipeline
 :class: important
-`mock_mcmc_buzzard.ini` runs `halo_model` with `compute_lensing_2h = F`:
-the reference shear composition is one-halo + projection
-({doc}`shear_projection`), which never reads the two-halo tables.
-Skipping the branch saves 200–300 ms per sample. The conventional
-$1h{+}2h$ composition is retained as a comparison variant — see
-{doc}`../variants`.
+Both the DES Y1 pipeline (`mock_mcmc_buzzard.ini`) and the DES Y3
+reference (`y3_ref.ini`, {doc}`../running`) run `halo_model` with
+`compute_lensing_2h = F`: the reference shear composition is one-halo +
+projection ({doc}`shear_projection`), which never reads the two-halo
+tables. Skipping the branch saves 200–300 ms per sample. The
+conventional $1h{+}2h$ **max-model composition is available as a
+documented model option**, `Shear1h2hMax` — see {doc}`../variants`.
 ```
 
 ## Script
@@ -87,28 +88,35 @@ of the 50-point redshift grid):
    folded in. This is the documented NaN region of `dSigma_hh` below
    $R \approx 8.6\,h^{-1}$cMpc (warning below).
 
-At the fiducial point the projection-aware reference composition sits
-$1.3$–$2.5\times$ **above** the conventional
-$\langle b\rangle\,\Delta\Sigma_{2h}$ term at $R = 5\,h^{-1}$cMpc (the
-$b_{\rm sel}$-boosted line-of-sight contribution grows toward low richness
-and high redshift), and $\approx 0.81\times$ below it at
-$R = 0.2\,h^{-1}$cMpc (miscentering suppression):
-
-```{image} ../_static/img/dsigma_compositions.png
-:alt: Stacked lensing compositions at the fiducial point
-:width: 100%
+```{admonition} Composition figure removed — was computed wrong
+:class: warning
+This page previously embedded a `dsigma_compositions.png` figure
+comparing three stacked-lensing compositions. It was pulled after
+review: the plotted "1h + ⟨b⟩ΔΣ_2h" curve was a plain **sum**, not the
+actual max-model composition this page documents
+($\Sigma_{\max} = \max(\Sigma_{\rm NFW},\, b\,\Sigma_{\rm hh})$). The
+correct recipe — `Phi_max = max(DSigma_cl, bias * dSigma_hh)`,
+population-weighted by $S_{ij}$ — is implemented in
+[`shear1h2h_max.py`](https://github.com/estevesjh/y3_cluster_cpp/blob/pipelines/des_y3/src/pipelines/des_y3/observables/shear_1h2h/fast_mass/python/shear1h2h_max.py)
+(`compute_shear_max`). Regenerating this figure correctly needs a real
+fiducial pipeline dump (`haloModel/{dSigma_hh, bias, dSigma_nfw}` with
+`compute_lensing_2h = T`) — not available in this environment (no GPU/
+NERSC toolchain, no checked-in dump) — so it isn't fabricated here.
+Whoever has pipeline access: run `y3_ref.ini` with `compute_lensing_2h
+= T`, feed the dump through `compute_shear_max`, and re-embed.
 ```
 
-```{warning}
-The wired legacy 1h+2h composition modules (`SigmaTotSel` /
+The wired production 1h+2h composition modules (`SigmaTotSel` /
 `DSigmaTotSel`) are **currently broken** (NaN `dSigma_hh` below
-$R \approx 8.6\,h^{-1}$cMpc; interpolation on the wrong radial axis).
-Any 1h+2h comparison must assemble the term from `BiasWeightedSel` +
-`xi_nl` directly. Details: {doc}`../modules/historical`.
-```
+$R \approx 8.6\,h^{-1}$cMpc; interpolation on the wrong radial axis) —
+this is why `shear1h2h_max.py` reads `haloModel/dSigma_hh` directly
+rather than through those modules. Any 1h+2h comparison must assemble
+the term from `BiasWeightedSel` + `xi_nl` directly, or use
+`Shear1h2hMax`/`shear1h2h_max.py` as documented here. Details:
+{doc}`../modules/historical`.
 
 Full derivation and the composition comparison:
-{doc}`../science/index`.
+{doc}`../math/index`.
 
 ## CosmoSIS setup
 
