@@ -118,6 +118,23 @@ N_q    = 32
 | `N_q` | Gauss–Legendre nodes of the $\lambda^{\rm tr}$ quadrature | — | 32 |
 | `L_lam`, `L_z` | quadrature bracket half-widths | units of $\sigma$ | 6.0, 6.0 |
 
+### Numerical precision: choosing `n_lnm`
+
+`n_lnm = 192` is a **whole-pipeline** optimum, not a per-module one:
+coarsening the $S_{ij}$ mass grid forces the downstream Cuhre-based
+`NumCountsSel` to refine harder, which cancels the time this module
+saves. Measured sweep (2026-05-07, wall-clock per sample):
+
+| `n_lnm` | `sel_function` | `NumCountsSel` | Total | Note |
+|---:|---:|---:|---:|---|
+| 256 | 0.38 s | 0.08 s | 1.36 s | accuracy ceiling |
+| **192** | 0.22 s | 0.12 s | **1.15 s** | sweet spot (reference value) |
+| 128 | 0.15 s | 0.27 s | 1.22 s | Cuhre refinement eats the savings |
+| 64 | — | — | — | **pathological**: GL resonance, 4.5% drift on `NumCountsSel` — avoid |
+
+Accuracy at `n_lnm = 192` vs `256`: $<0.05\%$ on `NumCountsSel` and
+`Shear1hMisSel`.
+
 ## DataBlock inputs
 
 | DataBlock input | Meaning | Units / shape | Produced by |

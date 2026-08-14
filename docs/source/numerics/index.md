@@ -15,6 +15,57 @@ and `radial_series`. Their precise meanings and available backends are listed
 in {doc}`../pipeline_organization`; the production recipes below correspond
 to the fast, path-stable modules loaded by the reference ini.
 
+## Strategy/backend accuracy and timing
+
+**Accuracy policy**: the reference for every observable is the
+**adaptive** `full_ltmz` calculation (reported error $\le 10^{-6}$). A
+fixed-GL implementation is never itself the reference — it is certified
+against the adaptive one, then used as the fast stand-in. Agreement
+with the production DES Y1 module is recorded separately as an
+*algorithm-identity* check, not an accuracy check. All numbers below:
+real pipeline, fiducial widePlanck point, pinned 12-bin wall, per-MCMC-
+sample timing. Full detail (all strategy/backend cells, caveats, validation
+records) is in
+[`src/pipelines/des_y3/README.md`](https://github.com/estevesjh/y3_cluster_cpp/blob/pipelines/des_y3/src/pipelines/des_y3/README.md).
+
+**Number counts** (12 bins; DES Y1 `NumCountsSel.so` = 6 ms):
+
+| Strategy / backend | Time | Error vs adaptive reference |
+|---|---:|---:|
+| `full_ltmz` Python adaptive | 25 s | reference |
+| `full_ltmz` Python (fixed GL) | 83 ms | 3.5e-5 |
+| `full_ltmz` C++ (Cuhre) | 3.1 s | 4.9e-4 |
+| `full_ltmz` CUDA (PAGANI) | 2.0 s | 5.1e-4 |
+| `fast_mass` Python | 5 ms | 7.6e-4 |
+| `fast_mass` C++ (`NumCountsFastMass.so`) | 6 ms | 7.6e-4 — **is** DES Y1's `NumCountsSel.so` by identity |
+
+**One-halo miscentred shear** (12 bins × 10 radii; DES Y1
+`Shear1hMisSel.so` = 9 ms):
+
+| Strategy / backend | Time | Error vs adaptive reference |
+|---|---:|---:|
+| `full_ltmz` Python adaptive | 35 s | reference |
+| `full_ltmz` Python (fixed GL) | 149 ms | 4.9e-5 |
+| `full_ltmz` C++ (Cuhre) | 51 s | 3.3e-4 |
+| `full_ltmz` CUDA (PAGANI) | 32 s | 3.4e-4 |
+| `fast_mass` Python | 74 ms | 8.4e-4 |
+| `fast_mass` C++ (`Shear1hFastMass.so`) | 9 ms | 8.4e-4 — bitwise = DES Y1's `Shear1hMisSel.so` |
+| `radial_series` Python ($\ell\le2$) | 6 ms | 3.7e-3 |
+| `radial_series` C++ (`Shear1hRadialSeries.so`) | 7 ms | 3.7e-3 + 1.6e-4 interp difference |
+| max model (traditional 1h+2h) C++ (`Shear1h2hMax.so`) | 11 ms | inherits 8.3e-4 from Python; see {doc}`../variants` |
+| max model CUDA (`Shear1h2hMaxGpu.so`) | 8 ms | machine precision vs C++ twin |
+
+**Projection shear** (180-point wall; DES Y1
+`ShearPrjFrozenPhysics.so` = 82 ms):
+
+| Strategy / backend | Time | Error vs best-available reference |
+|---|---:|---:|
+| `full_ltmz` CUDA (PAGANI over $\ln\theta, z, \ln M$) | 95 s | median 9.5e-4, max 2.2% at innermost radii (open convergence study) |
+| `fast_mass` Python (exact $z$) | 270 ms | reference (best available) |
+| `fast_mass` C++ (`ShearPrjFastMass.so`) | 154 ms | 9.9e-12 vs the exact evaluator, same core |
+| `fast_mass` DES Y1 frozen (`ShearPrjFrozenPhysics.so`) | 82 ms | 5.5e-5 from exact |
+| `fast_mass` CUDA (`ShearPrjFrozenGpu.so`, frozen) | 8.3 ms | machine precision vs DES Y1 frozen |
+
 ## General integral structure
 
 The recurring population integral is, schematically,
