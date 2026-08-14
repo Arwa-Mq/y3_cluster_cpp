@@ -76,4 +76,4 @@ The rest are orphans/experiments:
 - **`red_shear_prj`** as a module name — legacy; standardize on
   `shear_prj`.
 - **Reduced shear $g_t$** — retired observable (see
-  {doc}`../systematics/index`).
+  {doc}`../math/index`).

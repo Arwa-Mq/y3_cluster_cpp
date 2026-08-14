@@ -1,7 +1,7 @@
 # Running the reference pipeline
 
 The reference configuration of the DES Y3 cluster-cosmology analysis is
-[`docs/figs/y3_ref.ini`](https://github.com/estevesjh/y3_cluster_cpp/blob/docs/sphinx-site/docs/figs/y3_ref.ini)
+[`cosmosis-models/des_y3.ini`](https://github.com/estevesjh/y3_cluster_cpp/blob/docs/sphinx-site/cosmosis-models/des_y3.ini)
 in this repository: the same forward model and DataBlock contract as
 the DES Y1 pipeline ({doc}`variants`), with the three observable stages
 swapped for their `src/pipelines/des_y3` fast_mass implementations —
@@ -64,7 +64,7 @@ modules; blue = cosmology quantities, orange = selection effects,
 green = cluster observables, grey = likelihood):
 
 ```{image} _static/img/pipeline_dataflow.png
-:alt: Data flow of the y3_ref.ini reference pipeline
+:alt: Data flow of the des_y3.ini reference pipeline
 :width: 100%
 ```
 
@@ -118,13 +118,13 @@ Smoke test (single sample, `test` sampler):
 
 ```bash
 cd ${Y3_CLUSTER_CPP_DIR}
-cosmosis docs/figs/y3_ref.ini
+cosmosis cosmosis-models/des_y3.ini
 ```
 
 Production sampling follows the same override pattern as the DES Y1
 pipeline ({doc}`variants`) — e.g.
 `-p runtime.sampler=polychord runtime.resume=F polychord.live_points=500 ...` —
-substituting `y3_ref.ini` for `mock_mcmc_buzzard.ini`.
+substituting `des_y3.ini` for `mock_mcmc_buzzard.ini`.
 
 ## What the likelihood compares
 
@@ -150,7 +150,7 @@ modules deliberately publish under their own sections
 `dsigma_prj_fast_mass`) instead of aliasing to the DES Y1 names — by
 design, so both generations can co-run in one pipeline for comparison
 (a DataBlock `put_val` does not overwrite an existing key). Running
-`y3_ref.ini` as checked in demonstrates the swapped modules and their
+`des_y3.ini` as checked in demonstrates the swapped modules and their
 DataBlock contract, but does **not** yet produce a likelihood value
 end-to-end: that needs either a small alias step (matching what
 `shear_prj_frozen_physics` already does for its own section) or an

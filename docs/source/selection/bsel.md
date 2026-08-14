@@ -9,7 +9,7 @@ the two bias plateaus $(B_{\rm small}, B_{\rm large})$ that
 The model is
 [Costanzi et al. 2026, PhRvD 113, 103508](https://ui.adsabs.harvard.edu/abs/2026PhRvD.113j3508C/abstract)
 (arXiv:[2604.05833](https://arxiv.org/abs/2604.05833)); derivations in
-{doc}`../systematics/index` (optical selection bias).
+{doc}`../math/index` (optical selection bias).
 
 ---
 
@@ -143,7 +143,7 @@ marginalisation weight combines the GL weights, the EMG
 $P(\lambda^{\rm ob}|\lambda^{\rm tr}, z)$, and the mass-integrated HOD.
 Two guarded historical bugs: the $h_0$ factor on $\chi$ (12% sigmoid
 shift) and the $dn/dM$ vs $dn/d\ln M$ convention (halved $B_{\rm small}$).
-Full model: {doc}`../systematics/index`.
+Full model: {doc}`../math/index`.
 
 ### CosmoSIS setup
 

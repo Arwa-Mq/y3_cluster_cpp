@@ -119,7 +119,7 @@ radii       = <180 entries: 0.0426 … 24.8771 cMpc/h per bin>
 
 (The four wall arrays are 180 entries each — 12 bins × 15 radii, bin
 slow / radius fast; full arrays in
-[`docs/figs/y3_ref.ini`](https://github.com/estevesjh/y3_cluster_cpp/blob/docs/sphinx-site/docs/figs/y3_ref.ini).)
+[`cosmosis-models/des_y3.ini`](https://github.com/estevesjh/y3_cluster_cpp/blob/docs/sphinx-site/cosmosis-models/des_y3.ini).)
 
 - Ordering: **after `bsel`** (needs the bias plateaus), `halo_model`,
   `MfTinker`, `cp_camb`, `average_sigma_crit_inv`; before `likelihoods`.

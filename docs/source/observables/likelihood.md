@@ -26,7 +26,7 @@ with zero-guarded division (bins with $N_i \le 0$ contribute 0 to the
 one-halo average). The two shear pieces add linearly because both are
 tangential shear, not reduced shear — the
 $1/(1 - \kappa)$ denominator was retired
-({doc}`../systematics/index`). Shapes are hard-asserted at setup and on
+({doc}`../math/index`). Shapes are hard-asserted at setup and on
 every DataBlock read, so mismatches abort before an MCMC starts. In
 `log_space` mode the theory is floored at $10^{-300}$ so a transient
 non-positive prediction gives a large finite $\chi^2$ instead of a crash.

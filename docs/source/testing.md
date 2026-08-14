@@ -21,7 +21,6 @@ bugs):
 ```{toctree}
 :maxdepth: 1
 
-testing/test
 testing/src_pipelines_des_y3
 testing/src_modules
 ```

@@ -15,7 +15,7 @@ Its ingredients are computed by the
 ```{admonition} Not active in the reference pipeline
 :class: important
 Both the DES Y1 pipeline (`mock_mcmc_buzzard.ini`) and the DES Y3
-reference (`y3_ref.ini`, {doc}`../running`) run `halo_model` with
+reference (`des_y3.ini`, {doc}`../running`) run `halo_model` with
 `compute_lensing_2h = F`: the reference shear composition is one-halo +
 projection ({doc}`shear_projection`), which never reads the two-halo
 tables. Skipping the branch saves 200–300 ms per sample. The
@@ -102,7 +102,7 @@ population-weighted by $S_{ij}$ — is implemented in
 fiducial pipeline dump (`haloModel/{dSigma_hh, bias, dSigma_nfw}` with
 `compute_lensing_2h = T`) — not available in this environment (no GPU/
 NERSC toolchain, no checked-in dump) — so it isn't fabricated here.
-Whoever has pipeline access: run `y3_ref.ini` with `compute_lensing_2h
+Whoever has pipeline access: run `des_y3.ini` with `compute_lensing_2h
 = T`, feed the dump through `compute_shear_max`, and re-embed.
 ```
 

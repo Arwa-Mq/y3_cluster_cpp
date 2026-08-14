@@ -1,7 +1,7 @@
 # Pipeline variants
 
 The main walkthrough ({doc}`running`) documents the DES Y3 reference
-pipeline (`y3_ref.ini`), which swaps three DES Y1 production modules
+pipeline (`des_y3.ini`), which swaps three DES Y1 production modules
 for algorithmically-identical `src/pipelines/des_y3` fast_mass
 implementations. This page lists: the DES Y1 pipeline those modules
 replace, and every other retained variant — what changes, which
@@ -10,10 +10,10 @@ its theory vector differs from the reference.
 
 ## DES Y1 pipeline — `mock_mcmc_buzzard.ini`
 
-The production pipeline `y3_ref.ini` mirrors, byte-identical except for
+The production pipeline `des_y3.ini` mirrors, byte-identical except for
 the three observable stages:
 
-| DES Y3 reference (`y3_ref.ini`) | DES Y1 pipeline (`mock_mcmc_buzzard.ini`) | Relationship |
+| DES Y3 reference (`des_y3.ini`) | DES Y1 pipeline (`mock_mcmc_buzzard.ini`) | Relationship |
 |---|---|---|
 | `NumCountsFastMass` | `NumCountsSel` | algorithmically identical ("by identity") |
 | `Shear1hFastMass` | `Shear1hMisSel` | bitwise-equivalent |
@@ -23,7 +23,7 @@ Everything else — `consistency`, `GrowthFactor`, `cp_camb`, `MfTinker`,
 `halo_model`, `average_sigma_crit_inv`, `sel_function`, `b_sel_marg`,
 `bsel`, `likelihoods` — is the same module in both pipelines. See
 {doc}`running`'s warning about `likelihood_cp.py` section-name
-compatibility before running `y3_ref.ini` end-to-end.
+compatibility before running `des_y3.ini` end-to-end.
 
 | Variant | Modules changed | Observable changed | Status |
 |---|---|---|---|

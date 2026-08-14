@@ -13,8 +13,8 @@ when they are not CTest targets.
 | [`fast_mass/validate_vs_production.py`](https://github.com/estevesjh/y3_cluster_cpp/blob/docs/sphinx-site/src/pipelines/des_y3/observables/number_counts/fast_mass/python/validate_vs_production.py) | [`fast_mass/python/numcounts_fast_mass.py`](https://github.com/estevesjh/y3_cluster_cpp/blob/docs/sphinx-site/src/pipelines/des_y3/observables/number_counts/fast_mass/python/numcounts_fast_mass.py) | Python fast-mass replica versus `NumCountsSel.so` | Standalone validation |
 | — | [`fast_mass/cpp/NumCountsFastMass.cc`](https://github.com/estevesjh/y3_cluster_cpp/blob/pipelines/des_y3/src/pipelines/des_y3/observables/number_counts/fast_mass/cpp/NumCountsFastMass.cc) | Thin des_y3-labeled wrapper around `SelGLCore`/`NumCountsSelGL`, expected bitwise-identical to production `NumCountsSel.so` | **No dedicated unit test yet** — new module, syntax-verified against real include paths only; not exercised by `numcounts_cross_backend_test` or any Catch2 target |
 
-CUDA source exists under `full_ltmz/cuda/`; its CTest inventory is in
-{doc}`test` because the targets are registered centrally in `test/CMakeLists.txt`.
+CUDA source exists under `full_ltmz/cuda/`; its CTest targets are
+registered centrally in `test/CMakeLists.txt`.
 
 ## `observables/shear_1h2h/`
 

@@ -25,15 +25,19 @@ and compatibility rules.
 
 ### Observable products
 
-| Directory | Products |
-|---|---|
-| `observables/number_counts/full_ltmz` | Python reference, `NumCountsFullLtmz.so`, `NumCountsFullLtmzGpu.so` |
-| `observables/number_counts/fast_mass` | Python production-algorithm replica |
-| `observables/shear_1h2h/full_ltmz` | Python reference, `Shear1hFullLtmz.so`, `Shear1hFullLtmzGpu.so` |
-| `observables/shear_1h2h/fast_mass` | Python references, `Shear1hFastMass.so`, `Shear1h2hMax.so`, `Shear1h2hMaxGpu.so` |
-| `observables/shear_1h2h/radial_series` | Python offline generator/evaluator and `Shear1hRadialSeries.so` |
-| `observables/shear_projection/full_ltmz` | `DSigmaPrjFullLtmzGpu.so` |
-| `observables/shear_projection/fast_mass` | Python exact-$z$ reference, `ShearPrjFastMass.so`, `ShearPrjFrozenGpu.so` |
+Timing: per-MCMC-sample wall-clock at the fiducial widePlanck point, from
+[`src/pipelines/des_y3/README.md`](https://github.com/estevesjh/y3_cluster_cpp/blob/pipelines/des_y3/src/pipelines/des_y3/README.md)'s
+own accuracy/timing matrix (also surfaced in {doc}`../numerics/index`).
+
+| Directory | Products | Timing |
+|---|---|---|
+| `observables/number_counts/full_ltmz` | Python reference, `NumCountsFullLtmz.so`, `NumCountsFullLtmzGpu.so` | Python 25 s (adaptive) / 83 ms (fixed GL); C++ 3.1 s; CUDA 2.0 s |
+| `observables/number_counts/fast_mass` | Python production-algorithm replica, `NumCountsFastMass.so` | Python 5 ms; C++ 6 ms (= DES Y1 `NumCountsSel.so` by identity) |
+| `observables/shear_1h2h/full_ltmz` | Python reference, `Shear1hFullLtmz.so`, `Shear1hFullLtmzGpu.so` | Python 35 s (adaptive) / 149 ms (fixed GL); C++ 51 s; CUDA 32 s |
+| `observables/shear_1h2h/fast_mass` | Python references, `Shear1hFastMass.so`, `Shear1h2hMax.so`, `Shear1h2hMaxGpu.so` | `Shear1hFastMass` Python 74 ms / C++ 9 ms; `Shear1h2hMax` C++ 11 ms / CUDA 8 ms |
+| `observables/shear_1h2h/radial_series` | Python offline generator/evaluator and `Shear1hRadialSeries.so` | Python 6 ms; C++ 7 ms |
+| `observables/shear_projection/full_ltmz` | `DSigmaPrjFullLtmzGpu.so` | CUDA 95 s |
+| `observables/shear_projection/fast_mass` | Python exact-$z$ reference, `ShearPrjFastMass.so`, `ShearPrjFrozenGpu.so` | Python 270 ms; C++ 154 ms; CUDA (frozen) 8.3 ms |
 
 
 (src-models)=
@@ -130,14 +134,17 @@ loaded by file path from the ini and need no registration.
 
 ### Reference path
 
-| Directory | Products | Language | Docs |
-|---|---|---|---|
-| `num_counts_sel` | `NumCountsSel.so`, `Shear1hMisSel.so` (+ `Shear1hSel.so`, `MassWeightedSel.so`, `BiasWeightedSel.so`) | C++ | {doc}`../observables/number_counts`, {doc}`../observables/shear_halo` |
-| `b_sel_marg_cpu` | `BSelMargIntegrand.so` (+ `P1/I1/I2PaganiIntegrand.so` benchmarks) | C++ (+CUDA) | {doc}`../selection/bsel` |
-| `sigma_prj_cpu` | `ShearPrjFrozenPhysics.so` (+ `ShearPrjEvaluator.so`, `SigmaPrjEvaluator.so`, `DSigmaPrjEvaluator.so`, `ShearPrjGsl.so`, `ShearPrjCuhre.so`, `ShearPrjFrozenCuhre.so`) | C++ | {doc}`../observables/shear_projection`, {doc}`../variants` |
-| `cp_camb` | `cp_camb.py` (unregistered — loaded by path) | Python | {doc}`../cosmology/cp_camb` |
-| `sel_function` | `sel_function.py` (unregistered) | Python | {doc}`../selection/sel_function` |
-| `average_sigma_crit_inv` | `average_sigma_crit_inv.py` (unregistered) | Python | {doc}`../cosmology/sigma_crit_inv` |
+Timing: per-sample, `timing = T` on the DES Y1 reference pipeline
+({doc}`../variants`).
+
+| Directory | Products | Language | Timing | Docs |
+|---|---|---|---|---|
+| `num_counts_sel` | `NumCountsSel.so`, `Shear1hMisSel.so` (+ `Shear1hSel.so`, `MassWeightedSel.so`, `BiasWeightedSel.so`) | C++ | 22 ms + 28 ms | {doc}`../observables/number_counts`, {doc}`../observables/shear_halo` |
+| `b_sel_marg_cpu` | `BSelMargIntegrand.so` (+ `P1/I1/I2PaganiIntegrand.so` benchmarks) | C++ (+CUDA) | 66 ms | {doc}`../selection/bsel` |
+| `sigma_prj_cpu` | `ShearPrjFrozenPhysics.so` (+ `ShearPrjEvaluator.so`, `SigmaPrjEvaluator.so`, `DSigmaPrjEvaluator.so`, `ShearPrjGsl.so`, `ShearPrjCuhre.so`, `ShearPrjFrozenCuhre.so`) | C++ | 82 ms (`ShearPrjFrozenPhysics`; others unmeasured/reference-only) | {doc}`../observables/shear_projection`, {doc}`../variants` |
+| `cp_camb` | `cp_camb.py` (unregistered — loaded by path) | Python | 4 ms | {doc}`../cosmology/cp_camb` |
+| `sel_function` | `sel_function.py` (unregistered) | Python | 197 ms | {doc}`../selection/sel_function` |
+| `average_sigma_crit_inv` | `average_sigma_crit_inv.py` (unregistered) | Python | $<1$ ms | {doc}`../cosmology/sigma_crit_inv` |
 
 (The remaining reference-path Python steps — `halo_model_cosmosis.py`,
 `bsel.py`, `likelihood_cp.py`, `prj_params.py` — live in `y3_buzzard/`,

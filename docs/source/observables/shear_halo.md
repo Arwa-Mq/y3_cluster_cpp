@@ -78,7 +78,7 @@ neighbouring-halo offset inside the two-halo term
 ({doc}`shear_projection`). Both mixture pieces are linear in
 $\Delta\Sigma$, so the one-halo + projection sum in the likelihood is
 exact (tangential shear, not reduced shear —
-{doc}`../systematics/index`).
+{doc}`../math/index`).
 
 Evaluation is fixed Gauss–Legendre with the redshift axis contracted
 once per sample into mass weights $W_{ij}(\ln M)$; each of the 180 wall
@@ -89,7 +89,7 @@ step-by-step recipe lives in {doc}`../numerics/index`,
 
 Setting `miscentering/f_mis = 0` recovers the centred-only `Shear1hSel`
 result ({doc}`../variants`). Model derivation: {doc}`../math/index`;
-miscentering model: {doc}`../systematics/index`.
+miscentering model: {doc}`../math/index`.
 
 ## CosmoSIS setup
 

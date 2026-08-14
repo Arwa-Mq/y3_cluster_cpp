@@ -92,11 +92,8 @@ modules/historical
 :caption: Background chapters
 
 overview
-systematics/index
 numerics/index
 data/index
-validation/index
-cosmosis/index
 ```
 
 ## References

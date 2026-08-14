@@ -46,10 +46,10 @@ projection shear at the fiducial point using the `src/pipelines/des_y3`
 
 ```bash
 cd $Y3_CLUSTER_CPP_DIR
-cosmosis docs/figs/y3_ref.ini
+cosmosis cosmosis-models/des_y3.ini
 ```
 
-Outputs land in `y3_ref_test_output/`. See the docs'
+Outputs land in `des_y3_test_output/`. See the docs'
 [Running the reference pipeline](docs/source/running.md) page for the
 full module trace, environment setup, and a caveat about wiring this
 into an end-to-end likelihood evaluation. The production MCMC pipeline

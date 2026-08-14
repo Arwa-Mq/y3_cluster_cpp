@@ -284,7 +284,7 @@ is then upgraded in three steps for a richness-selected target: (i)
 $\xi_{\rm lin}\to\xi_{\rm NL}$ (halofit), because the 1h–2h transition at
 $\sim R_{\rm excl}$ is nonlinear; (ii) the LoS-slab exclusion above; (iii)
 $b_{\rm cls}\to b_{\rm sel}(\theta;\lambda^{\rm ob},z^{\rm ob})$ (see
-{doc}`../systematics/index`), plus the uncorrelated cosmological
+{doc}`../math/index`), plus the uncorrelated cosmological
 mean as the $+1$ inside the bracket.
 
 #### The channel split: $\Sigma_{\rm rnd}$ vs $\Sigma_{\rm cl+LSS}$

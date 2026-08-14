@@ -590,7 +590,7 @@ Hard-won conventions that every new integrand must respect:
 - **$B_i$ and $\Omega(z)$ placement**: both are deliberately absent from
   the $P[X]$ operator — they cancel in every downstream $b_{\rm sel}$
   ratio; $\Omega(z)$ is likewise excluded from surface-density
-  observables (see {doc}`../systematics/index`).
+  observables (see {doc}`../math/index`).
 
 ## Implementation mapping
 

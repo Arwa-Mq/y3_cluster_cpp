@@ -2,7 +2,8 @@
 
 The tests directly associated with `src/modules` are the integration-template
 examples. The production modules are exercised indirectly by the DES Y3 tests
-listed in {doc}`test` and {doc}`src_pipelines_des_y3`.
+listed in {doc}`src_pipelines_des_y3` (registered centrally in
+`test/CMakeLists.txt`).
 
 | CTest target | Test source | Module under test | What it tests | Status |
 |---|---|---|---|---|

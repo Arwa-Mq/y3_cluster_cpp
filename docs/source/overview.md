@@ -162,7 +162,7 @@ variant). The two terms can be added directly because both are predictions
 for tangential shear $\gamma_t$, **not** reduced shear $g_t$: the retired
 reduced-shear formulation $g_t = \gamma_t/(1-\kappa)$ has a denominator
 that prevents this additive decomposition (see
-{doc}`systematics/index`).
+{doc}`math/index`).
 
 ```{note}
 The widePlanck self-closure variant runs `average_sigma_crit_inv` with
@@ -378,7 +378,7 @@ To avoid ambiguity, the following terms are fixed here and used throughout.
 | Two-halo term (selection-affected) | $\Sigma^{\rm prj}$ | The two-halo term sourced by correlated line-of-sight structure, carrying the selection-affected bias $b_{\rm sel}(\theta)$. This is the Costanzi-2026 `shear_prj` branch. |
 | Conventional two-halo term | — | The unselected-bias limit of the above: correlated matter weighted by the plain halo-bias aggregate $b_{\rm halo}$ (code name `b_eff`), with no $b_{\rm sel}$ modulation. |
 | Tangential shear | $\gamma_t$ | The current primary lensing observable, $\gamma_t = \Delta\Sigma\,\langle\Sigma_{\rm crit}^{-1}\rangle$. |
-| Reduced shear | $g_t$ | The nonlinear observable $g_t = \gamma_t/(1-\kappa)$. **Not used by the current reference path** (retired; see {doc}`systematics/index`). |
+| Reduced shear | $g_t$ | The nonlinear observable $g_t = \gamma_t/(1-\kappa)$. **Not used by the current reference path** (retired; see {doc}`math/index`). |
 | Lensing boost factor | — | A correction for contamination of the source sample by cluster-associated galaxies. Distinct from both $\Sigma_{\rm crit}^{-1}$ (lensing geometry) and the projection-selection bias. No boost-factor module exists in the reference pipeline. |
 
 ## Status decisions
