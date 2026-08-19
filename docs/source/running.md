@@ -20,6 +20,8 @@ reference for this documentation.
 
 ## The pipeline
 
+This is the cosmosis reference pipeline for the DES Y3 Cluster small-scales project. 
+
 ```ini
 [pipeline]
 modules = consistency GrowthFactor cp_camb MfTinker halo_model
@@ -31,6 +33,8 @@ modules = consistency GrowthFactor cp_camb MfTinker halo_model
 values = ${DES_CLUSTER_NERSC_DIR}/cosmosis-models/mock_mcmc_widePlanck_values.ini
 likelihoods = likelihoods
 ```
+
+Below we have a table description for the modules used in this pipeline. 
 
 | # | Module | What it computes | Language · source |
 |---|---|---|---|
