@@ -540,10 +540,23 @@ Two implementation findings from producing this figure (2026-08-10):
 
 ## Selection functions
 
+## Selection functions
+
 This chapter defines the richness–mass relation, the observed-richness
 projection kernel, and the bin-integrated selection kernels that together
 build the selection function $S_{ij}(\ln M, z)$ used by every population
-integral in the pipeline.
+integral in the pipeline. The framework is developed across four Costanzi
+papers, cited by year throughout this chapter:
+[Costanzi et al. 2019a](https://ui.adsabs.harvard.edu/abs/2019MNRAS.482..490C/abstract)
+(arXiv:[1807.11719](https://arxiv.org/abs/1807.11719)) — the projection-effects
+model; [2019b](https://ui.adsabs.harvard.edu/abs/2019MNRAS.488.4779C/abstract)
+(arXiv:[1810.09456](https://arxiv.org/abs/1810.09456)) — SDSS cluster
+cosmology; [2021](https://ui.adsabs.harvard.edu/abs/2021PhRvD.103d3522C/abstract)
+(arXiv:[2010.13800](https://arxiv.org/abs/2010.13800)) — DES Y1 + SPT; and
+[2026](https://ui.adsabs.harvard.edu/abs/2026PhRvD.113j3508C/abstract)
+(arXiv:[2604.05833](https://arxiv.org/abs/2604.05833)) — the forward-modelled
+lensing selection bias.
+
 
 ### Intrinsic richness–mass relation
 
