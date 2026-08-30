@@ -46,8 +46,7 @@ and the log-normal alternative (Costanzi et al. 2021): {doc}`../math/index`,
 **Numerical guards and known divergences.** Narrow-Gaussian fallback
 where $\mu_{\rm sat} \le 10^{-8}$; `z_pivot` defaults to 0.45. When both
 `log10_ratio` and `log10_M1` are present, `log10_ratio` wins:
-$\log_{10} M_1 = \log_{10} M_{\rm min} + \texttt{log10\_ratio}$. Two
-known small divergences between evaluators: `b_sel_marg` and `bsel` use
+`log10_M1 = log10_Mmin + log10_ratio`. Two known small divergences between evaluators: `b_sel_marg` and `bsel` use
 the satellite term without the central-galaxy shift $\lambda_{\rm cen}$,
 and `bsel` defaults its pivot to 0.4544.
 
